@@ -87,35 +87,17 @@
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">NQ validées</p>
                 <h3 id="kpi-nq" class="text-2xl font-bold text-teal-400">0</h3>
             </div>
-            <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
-                <div class="w-1/4 bg-teal-500 h-1/3 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-2/3 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-1/2 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-full rounded-t"></div>
-            </div>
         </div>
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Lignes non débriefées</p>
                 <h3 id="kpi-non-debrief" class="text-2xl font-bold text-red-400">0</h3>
             </div>
-            <div class="h-8 w-24 bg-red-500/10 rounded flex items-end px-1 gap-0.5">
-                <div class="w-1/4 bg-red-500 h-full rounded-t"></div>
-                <div class="w-1/4 bg-red-500 h-3/4 rounded-t"></div>
-                <div class="w-1/4 bg-red-500 h-1/2 rounded-t"></div>
-                <div class="w-1/4 bg-red-500 h-1/4 rounded-t"></div>
-            </div>
         </div>
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Débriefs réalisés</p>
                 <h3 id="kpi-debrief" class="text-2xl font-bold text-teal-400">0</h3>
-            </div>
-            <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
-                <div class="w-1/4 bg-teal-500 h-1/4 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-1/2 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-3/4 rounded-t"></div>
-                <div class="w-1/4 bg-teal-500 h-full rounded-t"></div>
             </div>
         </div>
     </div>
@@ -131,12 +113,12 @@
                 </tr>
             </thead>
             <tbody id="table-categories" class="divide-y divide-[#1e293b]">
-                <!-- Généré dynamiquement -->
+                <tr><td colspan="2" class="py-3 text-center text-slate-500">Chargement des données...</td></tr>
             </tbody>
         </table>
     </div>
 
-    <!-- Section Inférieure : Agents à accompagner et NQ par site -->
+    <!-- Section Inférieure -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Flop Agents NQ -->
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg overflow-x-auto">
@@ -149,7 +131,7 @@
                     </tr>
                 </thead>
                 <tbody id="table-flop-agents" class="divide-y divide-[#1e293b]">
-                    <!-- Généré dynamiquement -->
+                    <tr><td colspan="2" class="py-3 text-center text-slate-500">Chargement...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -172,21 +154,19 @@
         </div>
     </div>
 
-    <!-- Script de liaison et calcul automatique -->
+    <!-- Script de liaison contournant les blocages de sécurité -->
     <script>
-        // URL CSV directe de l'onglet "Qualité" de votre Google Sheets
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468"; 
+        const rawSheetUrl = "https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468";
+        const CSV_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(rawSheetUrl);
 
         let globalData = [];
 
-        // Traduction des mois textuels pour analyse de la "Date de diffusion"
         const monthsMapping = {
             "janvier": "01", "février": "02", "mars": "03", "avril": "04",
             "mai": "05", "juin": "06", "juillet": "07", "août": "08",
             "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12"
         };
 
-        // Chargement automatique des données du Google Sheets
         Papa.parse(CSV_URL, {
             download: true,
             header: true,
@@ -197,8 +177,8 @@
                 filterData();
             },
             error: function(err) {
-                console.error("Erreur lors du chargement du Google Sheets :", err);
-                alert("Erreur de chargement des données. Assurez-vous que le fichier Google Sheets est bien partagé en mode lecture publique.");
+                console.error("Erreur de chargement :", err);
+                document.getElementById('table-categories').innerHTML = `<tr><td colspan="2" class="py-3 text-center text-red-400">Erreur de chargement des données.</td></tr>`;
             }
         });
 
@@ -210,7 +190,7 @@
             });
 
             const agentSelect = document.getElementById('filter-agent');
-            agentsSet.forEach(agent => {
+            Array.from(agentsSet).sort().forEach(agent => {
                 let opt = document.createElement('option');
                 opt.value = agent;
                 opt.textContent = agent;
@@ -258,29 +238,26 @@
             let siteDiego = 0;
 
             data.forEach(row => {
-                // Débrief (O/N)
-                let debrief = (row['Débrief\r\n(O/N)'] || row['Débrief (O/N)'] || "").trim().toUpperCase();
+                let debriefKeys = Object.keys(row).find(k => k.includes('Débrief')) || "";
+                let debrief = (row[debriefKeys] || "").trim().toUpperCase();
                 if (debrief === 'O') {
                     debriefsRealises++;
                 } else {
                     nonDebriefs++;
                 }
 
-                // Catégorie
-                let cat = (row['Catégorie (AUTO)'] || "Non classé").trim();
-                categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
+                let catKey = Object.keys(row).find(k => k.includes('Catégorie')) || "";
+                let cat = (row[catKey] || "Non classé").trim();
+                if (cat) categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
 
-                // Agent
                 let agent = (row['Collaborateur (Agent)'] || "Inconnu").trim();
                 agentsCount[agent] = (agentsCount[agent] || 0) + 1;
 
-                // Site
                 let site = (row['Site (Auto)'] || "").trim().toUpperCase();
                 if (site === 'TANA') siteTana++;
                 if (site === 'DIEGO') siteDiego++;
             });
 
-            // Mise à jour des KPI
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
@@ -288,7 +265,6 @@
             document.getElementById('site-tana-count').textContent = siteTana;
             document.getElementById('site-diego-count').textContent = siteDiego;
 
-            // Mise à jour du tableau des catégories
             let catTableHtml = '';
             for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
                 catTableHtml += `<tr class="hover:bg-slate-800/40">
@@ -296,9 +272,8 @@
                     <td class="py-2.5 px-3 text-right font-bold text-teal-400">${count}</td>
                 </tr>`;
             }
-            document.getElementById('table-categories').innerHTML = catTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée</td></tr>`;
+            document.getElementById('table-categories').innerHTML = catTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée pour ces filtres</td></tr>`;
 
-            // Mise à jour du Flop Agents (Top 5)
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentTableHtml = '';
             for (let [agent, count] of sortedAgents) {
@@ -307,7 +282,7 @@
                     <td class="py-2 px-2 text-right font-bold text-red-400">${count}</td>
                 </tr>`;
             }
-            document.getElementById('table-flop-agents').innerHTML = agentTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée</td></tr>`;
+            document.getElementById('table-flop-agents').innerHTML = agentTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée pour ces filtres</td></tr>`;
         }
     </script>
 </body>
