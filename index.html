@@ -24,266 +24,40 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PapaParse pour lire facilement le fichier CSV en direct -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-[#0b0f19] text-slate-100 font-sans antialiased min-h-screen p-4 md:p-6">
+<body class="bg-[#0b0f19] text-slate-100 font-sans antialiased min-h-screen flex flex-col p-4 md:p-6">
 
     <!-- En-tête -->
-    <header class="mb-6">
+    <header class="mb-4">
         <h1 class="text-2xl md:text-3xl font-bold tracking-wider text-center uppercase mb-1">
             Quality Performance Center — Audio
         </h1>
         <p class="text-xs md:text-sm text-slate-400 text-center">
-            Mesurer la qualité. Comprendre les écarts. Piloter la performance (Basé sur la Date de Diffusion).
+            Mesurer la qualité. Comprendre les écarts. Piloter la performance (Synchronisation en direct).
         </p>
     </header>
 
-    <!-- Barre de filtres (Mois de Janvier à Décembre) -->
-    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-medium">Période (Mois) :</span>
-                <select id="filter-mois" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
-                    <option value="Tous">Tous</option>
-                    <option value="janvier">Janvier</option>
-                    <option value="février">Février</option>
-                    <option value="mars">Mars</option>
-                    <option value="avril">Avril</option>
-                    <option value="mai">Mai</option>
-                    <option value="juin">Juin</option>
-                    <option value="juillet">Juillet</option>
-                    <option value="août">Août</option>
-                    <option value="septembre">Septembre</option>
-                    <option value="octobre">Octobre</option>
-                    <option value="novembre">Novembre</option>
-                    <option value="décembre">Décembre</option>
-                </select>
-            </div>
+    <!-- Conteneur d'affichage intégré et synchronisé du Google Sheets (Onglet Qualité) -->
+    <main class="flex-grow w-full max-w-7xl mx-auto bg-[#131c2e] border border-[#1e293b] rounded-xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="bg-[#1e293b]/50 px-4 py-2 flex items-center justify-between border-b border-[#1e293b]">
+            <span class="text-xs font-medium text-slate-300"><i class="fa-solid fa-table text-teal-400 mr-2"></i> Base de données - Onglet Qualité</span>
+            <a href="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468#gid=1183773468" target="_blank" class="text-xs text-sky-400 hover:underline">
+                Ouvrir dans Google Sheets <i class="fa-solid fa-external-link-alt text-[10px] ml-1"></i>
+            </a>
         </div>
-
-        <div class="flex items-center gap-4 w-full xl:w-auto justify-end">
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-medium">Site :</span>
-                <select id="filter-site" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
-                    <option value="Tous">Tous</option>
-                    <option value="TANA">TANA</option>
-                    <option value="DIEGO">DIEGO</option>
-                </select>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-medium">Agent :</span>
-                <select id="filter-agent" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
-                    <option value="Tous">Tous les agents</option>
-                </select>
-            </div>
+        
+        <!-- Intégration iframe ciblée précisément sur l'onglet "Qualité" (gid=1183773468) -->
+        <div class="flex-grow w-full" style="min-height: 80vh;">
+            <iframe src="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468&amp;single=true&amp;widget=true&amp;headers=false" 
+                    class="w-full h-full border-0" 
+                    style="min-height: 75vh;">
+            </iframe>
         </div>
-    </div>
+    </main>
 
-    <!-- Cartes KPI Haut de page -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
-            <div>
-                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">NQ validées</p>
-                <h3 id="kpi-nq" class="text-2xl font-bold text-teal-400">0</h3>
-            </div>
-        </div>
-        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
-            <div>
-                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Lignes non débriefées</p>
-                <h3 id="kpi-non-debrief" class="text-2xl font-bold text-red-400">0</h3>
-            </div>
-        </div>
-        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
-            <div>
-                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Débriefs réalisés</p>
-                <h3 id="kpi-debrief" class="text-2xl font-bold text-teal-400">0</h3>
-            </div>
-        </div>
-    </div>
+    <footer class="mt-4 text-center text-xs text-slate-500">
+        Mises à jour automatiques basées sur la source Google Sheets officielle.
+    </footer>
 
-    <!-- Suivi par Catégorie -->
-    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg overflow-x-auto">
-        <h2 class="text-sm font-semibold mb-3 text-slate-300">Suivi par Catégorie d'Erreurs</h2>
-        <table class="w-full text-left border-collapse text-xs">
-            <thead>
-                <tr class="border-b border-[#1e293b] text-slate-400">
-                    <th class="py-2 px-3">Catégorie</th>
-                    <th class="py-2 px-3 text-right">Total Cas</th>
-                </tr>
-            </thead>
-            <tbody id="table-categories" class="divide-y divide-[#1e293b]">
-                <tr><td colspan="2" class="py-3 text-center text-slate-500">Chargement des données...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Section Inférieure -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Flop Agents NQ -->
-        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg overflow-x-auto">
-            <h2 class="text-sm font-semibold mb-3 text-slate-300">Agents à accompagner — Flop NQ de la période</h2>
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="border-b border-[#1e293b] text-slate-400">
-                        <th class="py-2 px-2">Agent</th>
-                        <th class="py-2 px-2 text-right">Cumul Erreurs NQ</th>
-                    </tr>
-                </thead>
-                <tbody id="table-flop-agents" class="divide-y divide-[#1e293b]">
-                    <tr><td colspan="2" class="py-3 text-center text-slate-500">Chargement...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- NQ par site -->
-        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex flex-col justify-between">
-            <h2 class="text-sm font-semibold mb-3 text-slate-300">Répartition NQ par Site</h2>
-            <div class="grid grid-cols-2 gap-4 my-auto">
-                <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
-                    <p class="text-xs text-slate-400">TANA</p>
-                    <p id="site-tana-count" class="text-xl font-bold text-teal-400 my-1">0</p>
-                    <p class="text-[10px] text-slate-400">Cas enregistrés</p>
-                </div>
-                <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
-                    <p class="text-xs text-slate-400">DIEGO</p>
-                    <p id="site-diego-count" class="text-xl font-bold text-red-400 my-1">0</p>
-                    <p class="text-[10px] text-slate-400">Cas enregistrés</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Script de liaison contournant les blocages de sécurité -->
-    <script>
-        const rawSheetUrl = "https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468";
-        const CSV_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(rawSheetUrl);
-
-        let globalData = [];
-
-        const monthsMapping = {
-            "janvier": "01", "février": "02", "mars": "03", "avril": "04",
-            "mai": "05", "juin": "06", "juillet": "07", "août": "08",
-            "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12"
-        };
-
-        Papa.parse(CSV_URL, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                globalData = results.data;
-                initFilters();
-                filterData();
-            },
-            error: function(err) {
-                console.error("Erreur de chargement :", err);
-                document.getElementById('table-categories').innerHTML = `<tr><td colspan="2" class="py-3 text-center text-red-400">Erreur de chargement des données.</td></tr>`;
-            }
-        });
-
-        function initFilters() {
-            const agentsSet = new Set();
-            globalData.forEach(row => {
-                let agent = row['Collaborateur (Agent)'];
-                if (agent) agentsSet.add(agent.trim());
-            });
-
-            const agentSelect = document.getElementById('filter-agent');
-            Array.from(agentsSet).sort().forEach(agent => {
-                let opt = document.createElement('option');
-                opt.value = agent;
-                opt.textContent = agent;
-                agentSelect.appendChild(opt);
-            });
-        }
-
-        function getMoisFromDateDiffusion(dateStr) {
-            if (!dateStr) return "";
-            dateStr = dateStr.toLowerCase();
-            for (let [moisName, moisNum] of Object.entries(monthsMapping)) {
-                if (dateStr.includes(moisName)) return moisName;
-            }
-            return "";
-        }
-
-        function filterData() {
-            const selectedMois = document.getElementById('filter-mois').value.toLowerCase();
-            const selectedSite = document.getElementById('filter-site').value;
-            const selectedAgent = document.getElementById('filter-agent').value;
-
-            const filtered = globalData.filter(row => {
-                let dateDiff = row['Date de diffusion'] || "";
-                let rowMois = getMoisFromDateDiffusion(dateDiff);
-                let rowSite = (row['Site (Auto)'] || "").trim();
-                let rowAgent = (row['Collaborateur (Agent)'] || "").trim();
-
-                let matchMois = (selectedMois === "tous" || rowMois === selectedMois);
-                let matchSite = (selectedSite === "tous" || rowSite.toUpperCase() === selectedSite.toUpperCase());
-                let matchAgent = (selectedAgent === "tous" || rowAgent === selectedAgent);
-
-                return matchMois && matchSite && matchAgent;
-            });
-
-            updateDashboard(filtered);
-        }
-
-        function updateDashboard(data) {
-            let totalNQ = data.length;
-            let debriefsRealises = 0;
-            let nonDebriefs = 0;
-            let categoriesCount = {};
-            let agentsCount = {};
-            let siteTana = 0;
-            let siteDiego = 0;
-
-            data.forEach(row => {
-                let debriefKeys = Object.keys(row).find(k => k.includes('Débrief')) || "";
-                let debrief = (row[debriefKeys] || "").trim().toUpperCase();
-                if (debrief === 'O') {
-                    debriefsRealises++;
-                } else {
-                    nonDebriefs++;
-                }
-
-                let catKey = Object.keys(row).find(k => k.includes('Catégorie')) || "";
-                let cat = (row[catKey] || "Non classé").trim();
-                if (cat) categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
-
-                let agent = (row['Collaborateur (Agent)'] || "Inconnu").trim();
-                agentsCount[agent] = (agentsCount[agent] || 0) + 1;
-
-                let site = (row['Site (Auto)'] || "").trim().toUpperCase();
-                if (site === 'TANA') siteTana++;
-                if (site === 'DIEGO') siteDiego++;
-            });
-
-            document.getElementById('kpi-nq').textContent = totalNQ;
-            document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
-            document.getElementById('kpi-debrief').textContent = debriefsRealises;
-
-            document.getElementById('site-tana-count').textContent = siteTana;
-            document.getElementById('site-diego-count').textContent = siteDiego;
-
-            let catTableHtml = '';
-            for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
-                catTableHtml += `<tr class="hover:bg-slate-800/40">
-                    <td class="py-2.5 px-3 font-medium">${cat}</td>
-                    <td class="py-2.5 px-3 text-right font-bold text-teal-400">${count}</td>
-                </tr>`;
-            }
-            document.getElementById('table-categories').innerHTML = catTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée pour ces filtres</td></tr>`;
-
-            let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            let agentTableHtml = '';
-            for (let [agent, count] of sortedAgents) {
-                agentTableHtml += `<tr class="hover:bg-slate-800/40">
-                    <td class="py-2 px-2 font-medium">${agent}</td>
-                    <td class="py-2 px-2 text-right font-bold text-red-400">${count}</td>
-                </tr>`;
-            }
-            document.getElementById('table-flop-agents').innerHTML = agentTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée pour ces filtres</td></tr>`;
-        }
-    </script>
 </body>
 </html>
