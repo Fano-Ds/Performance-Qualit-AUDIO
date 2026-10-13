@@ -174,8 +174,8 @@
 
     <!-- Script de liaison et calcul automatique -->
     <script>
-        // Remplacez cette URL par le lien CSV publié de votre Google Sheets (Fichier > Partager > Publier sur le web > CSV)
-        const CSV_URL = "YOUR_CSV_URL_HERE"; 
+        // URL CSV directe de l'onglet "Qualité" de votre Google Sheets
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468"; 
 
         let globalData = [];
 
@@ -198,7 +198,7 @@
             },
             error: function(err) {
                 console.error("Erreur lors du chargement du Google Sheets :", err);
-                alert("Veuillez bien configurer l'URL du fichier CSV publié dans le code source (variable CSV_URL).");
+                alert("Erreur de chargement des données. Assurez-vous que le fichier Google Sheets est bien partagé en mode lecture publique.");
             }
         });
 
