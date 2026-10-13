@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quality Performance Center - Audio</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Inclusion de SheetJS pour lire directement les fichiers Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-main: #0b1329;
@@ -50,17 +52,24 @@
         }
         .header-logo { max-height: 65px; width: auto; object-fit: contain; border-radius: 8px; padding: 4px; background: #ffffff; }
 
-        .paste-panel, .volume-panel {
+        .upload-panel, .volume-panel {
             background: var(--bg-card); border: 1px solid var(--primary);
             border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(45, 212, 191, 0.08);
         }
-        .paste-panel h3, .volume-panel h3 { font-size: 13px; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; }
-        .paste-textarea {
-            width: 100%; height: 90px; background: var(--bg-main); border: 1px solid var(--border-color);
-            color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 11px; font-family: monospace; resize: vertical; margin-bottom: 10px;
+        .upload-panel h3, .volume-panel h3 { font-size: 13px; color: var(--primary); margin-bottom: 10px; text-transform: uppercase; font-weight: 700; }
+        
+        .file-drop-zone {
+            border: 2px dashed var(--border-color);
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            background: var(--bg-main);
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .btn-update { background: var(--primary); color: #042f2e; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-        .btn-update:hover { opacity: 0.9; }
+        .file-drop-zone:hover { border-color: var(--primary); background: rgba(45, 212, 191, 0.03); }
+        .file-input { display: none; }
 
         .volume-grid {
             display: grid;
@@ -91,7 +100,7 @@
             background: #115e59; color: #99f6e4; border: none; padding: 6px 14px;
             border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;
         }
-        .month-btn.active { background: var(--primary); color: #042f2e; }
+        .month-btn.active { background: var(--primary); color: #042f2e; box-shadow: 0 0 10px var(--primary-glow); }
 
         .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .kpi-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; }
@@ -126,17 +135,18 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
-    <div class="paste-panel">
-        <h3>📋 1. Copier-coller direct de votre onglet Qualité (Google Sheets)</h3>
-        <textarea id="raw-data-input" class="paste-textarea" placeholder="Collez vos lignes de Google Sheets ici (Ctrl+V)..."></textarea>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-            <button class="btn-update" onclick="traiterDonneesCollees()">⚡ Charger les données</button>
-            <span id="debug-status" style="font-size: 11px; color: var(--warning);">En attente de données...</span>
+    <!-- Importation directe du fichier Excel -->
+    <div class="upload-panel">
+        <h3>📁 Importation de votre Suivi Qualité (Fichier Excel .xlsx ou .csv)</h3>
+        <div class="file-drop-zone" onclick="document.getElementById('excel-file-input').click()">
+            <span id="file-name-display" style="font-size: 13px; font-weight: 600; color: var(--primary);">📥 Cliquez ici ou glissez votre fichier Excel de suivi qualité ici...</span>
+            <input type="file" id="excel-file-input" class="file-input" accept=".xlsx, .xls, .csv" onchange="importerFichierExcel(event)">
         </div>
     </div>
 
+    <!-- Bloc des volumes pour le calcul des taux réels (Modèle LIris) -->
     <div class="volume-panel">
-        <h3>📊 2. Volumes de Production de la Période (Modèle LIris)</h3>
+        <h3>📊 Paramétrage des Volumes de Production (Référence pour Taux Réels)</h3>
         <div class="volume-grid">
             <div class="volume-item">
                 <label>Nombre de RMs Envoyées / Produites :</label>
@@ -147,7 +157,7 @@
                 <input type="number" id="vol-alertes" value="100000" onchange="rafraichirDashboard()">
             </div>
             <div class="volume-item">
-                <label>Volume Horaire / Autre référence :</label>
+                <label>Volume Horaire / Autre Base :</label>
                 <input type="number" id="vol-horaire" value="1000" onchange="rafraichirDashboard()">
             </div>
         </div>
@@ -212,7 +222,7 @@
     </div>
 
     <div class="card-section">
-        <h2>Suivi par Catégorie & Taux Réel (Inspiré LIris)</h2>
+        <h2>Suivi par Catégorie & Taux Réel</h2>
         <table>
             <thead>
                 <tr>
@@ -225,7 +235,7 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Veuillez coller vos données...</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Veuillez importer votre fichier Excel ci-dessus...</td></tr>
             </tbody>
         </table>
     </div>
@@ -239,23 +249,29 @@
     </div>
 
     <script>
-        let donneesBrutesGlobales = [];
+        let donneesExcelGlobales = [];
         let moisActif = '10';
 
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
-        function traiterDonneesCollees() {
-            const texteColle = document.getElementById('raw-data-input').value.trim();
-            const debugEl = document.getElementById('debug-status');
+        function importerFichierExcel(e) {
+            const fichier = e.target.files[0];
+            if (!fichier) return;
 
-            if (!texteColle) {
-                alert("Veuillez coller vos données.");
-                return;
-            }
+            document.getElementById('file-name-display').textContent = `📄 Fichier chargé : ${fichier.name}`;
 
-            donneesBrutesGlobales = texteColle.split(/\r\n|\n/).map(l => l.split('\t').map(c => c.trim()));
-            debugEl.textContent = `Succès : ${donneesBrutesGlobales.length} lignes chargées.`;
-            rafraichirDashboard();
+            const lecteur = new FileReader();
+            lecteur.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const classeur = XLSX.read(data, {type: 'array'});
+                const premiereFeuille = classeur.SheetNames[0];
+                const feuille = classeur.Sheets[premiereFeuille];
+                
+                // Conversion de la feuille Excel en tableau JavaScript (lignes/colonnes)
+                donneesExcelGlobales = XLSX.utils.sheet_to_json(feuille, {header: 1});
+                rafraichirDashboard();
+            };
+            lecteur.readAsArrayBuffer(fichier);
         }
 
         function filtrerMoisRapide(mois) {
@@ -269,7 +285,7 @@
 
         function extraireMois(str) {
             if (!str) return '';
-            let s = str.toLowerCase();
+            let s = String(str).toLowerCase();
             if (s.includes('janvier') || s.includes('-01-') || s.includes('/01/')) return '01';
             if (s.includes('février') || s.includes('fevrier') || s.includes('-02-') || s.includes('/02/')) return '02';
             if (s.includes('mars') || s.includes('-03-') || s.includes('/03/')) return '03';
@@ -286,7 +302,7 @@
         }
 
         function rafraichirDashboard() {
-            if (!donneesBrutesGlobales.length) return;
+            if (!donneesExcelGlobales.length) return;
 
             const siteFiltre = document.getElementById('filter-site').value.toUpperCase();
             const agentFiltre = document.getElementById('filter-agent').value;
@@ -303,26 +319,29 @@
 
             let totalNQ = 0, debriefsRealises = 0, enAttenteDebriefTotal = 0;
 
-            for (let i = 0; i < donneesBrutesGlobales.length; i++) {
-                const cols = donneesBrutesGlobales[i];
+            for (let i = 0; i < donneesExcelGlobales.length; i++) {
+                const cols = donneesExcelGlobales[i];
                 if (!cols || cols.length < 5) continue;
 
                 let joint = cols.join(' ').toLowerCase();
                 if (joint.includes('collaborateur') || joint.includes('date d\'indexation') || joint.trim() === '') continue;
 
-                // Agent (Colonne E / index 4)
-                let agent = cols[4] || '';
+                // 1. Agent : Colonne E (index 4)
+                let agent = String(cols[4] || '').trim();
                 if (!agent || agent.length < 2 || agent.includes('/') || agent.includes('S0')) continue;
                 agentsSet.add(agent);
 
-                // Date de diffusion (Colonne G / index 6)
+                // 2. Date de diffusion : Colonne G (index 6)
                 let dateDiff = cols[6] || '';
                 let moisLigne = extraireMois(dateDiff);
 
-                // Catégories (K, L, M -> index 10, 11, 12)
-                let colK = cols[10] || '';
-                let colL = cols[11] || '';
-                let colM = cols[12] || '';
+                // 3. Site : Colonne F (index 5)
+                let site = String(cols[5] || '').toUpperCase();
+
+                // 4. Catégories NQ (Colonnes K, L, M -> index 10, 11, 12)
+                let colK = String(cols[10] || '');
+                let colL = String(cols[11] || '');
+                let colM = String(cols[12] || '');
                 let typeNQ = '';
 
                 if (colK && !/rien/i.test(colK)) typeNQ = 'MAUVAISE';
@@ -331,15 +350,16 @@
 
                 if (!typeNQ) continue;
 
-                // Imputabilité (Col P -> index 15) et Débrief (Col R -> index 17)
-                let valP = (cols[15] || '').trim().toUpperCase();
-                let valR = (cols[17] || '').trim().toUpperCase();
+                // 5. Imputabilité (Col P -> index 15) et Débrief (Col R -> index 17)
+                let valP = String(cols[15] || '').trim().toUpperCase();
+                let valR = String(cols[17] || '').trim().toUpperCase();
 
-                // Si P = 'N' -> Exclu
+                // Règle : Si P = 'N' -> Exclu
                 if (valP === 'N') continue;
 
                 // Filtres
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
+                if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
                 // Si P = 'O'
@@ -348,7 +368,7 @@
                     totalNQ++;
 
                     // Si R est vide -> En attente de débrief
-                    if (valR === '' || valR === '0') {
+                    if (valR === '' || valR === '0' || valR === 'NULL') {
                         statsCategories[typeNQ].enAttenteDebrief++;
                         enAttenteDebriefTotal++;
                     } else {
@@ -357,7 +377,7 @@
                 }
             }
 
-            // Maj select agent
+            // Maj menu déroulant des agents
             const agentSelect = document.getElementById('filter-agent');
             const currentAgent = agentSelect.value;
             agentSelect.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -367,7 +387,7 @@
                 agentSelect.appendChild(opt);
             });
 
-            // KPIs
+            // Affichage KPIs
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = enAttenteDebriefTotal;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
@@ -392,7 +412,7 @@
                 </tr>`;
             }
             document.getElementById('table-categories').innerHTML = htmlTable;
-            document.getElementById('alerte-rouge-texte').textContent = enAttenteDebriefTotal > 0 ? `${enAttenteDebriefTotal} dossier(s) en attente de débrief.` : 'Aucun dossier en attente.';
+            document.getElementById('alerte-rouge-texte').textContent = enAttenteDebriefTotal > 0 ? `${enAttenteDebriefTotal} dossier(s) en attente de débrief (P=O, R=Vide).` : 'Aucun dossier en attente.';
         }
     </script>
 </body>
