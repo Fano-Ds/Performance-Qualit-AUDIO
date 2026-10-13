@@ -576,6 +576,33 @@
             rafraichirDashboard();
         }
 
+        function extraireMois(dateStr) {
+            if (!dateStr) return '';
+            // Formats possibles : "vendredi 2 janvier 2026", "02/01/2026", "2026-01-02", "janvier - 01"
+            let d = dateStr.toLowerCase();
+            if (d.includes('janvier') || d.includes('/01/') || d.includes('-01-') || d.endsWith('- 01')) return '01';
+            if (d.includes('février') || d.includes('/02/') || d.includes('-02-') || d.endsWith('- 02')) return '02';
+            if (d.includes('mars') || d.includes('/03/') || d.includes('-03-') || d.endsWith('- 03')) return '03';
+            if (d.includes('avril') || d.includes('/04/') || d.includes('-04-') || d.endsWith('- 04')) return '04';
+            if (d.includes('mai') || d.includes('/05/') || d.includes('-05-') || d.endsWith('- 05')) return '05';
+            if (d.includes('juin') || d.includes('/06/') || d.includes('-06-') || d.endsWith('- 06')) return '06';
+            if (d.includes('juillet') || d.includes('/07/') || d.includes('-07-') || d.endsWith('- 07')) return '07';
+            if (d.includes('août') || d.includes('/08/') || d.includes('-08-') || d.endsWith('- 08')) return '08';
+            if (d.includes('septembre') || d.includes('/09/') || d.includes('-09-') || d.endsWith('- 09')) return '09';
+            if (d.includes('octobre') || d.includes('/10/') || d.includes('-10-') || d.endsWith('- 10')) return '10';
+            if (d.includes('novembre') || d.includes('/11/') || d.includes('-11-') || d.endsWith('- 11')) return '11';
+            if (d.includes('décembre') || d.includes('/12/') || d.includes('-12-') || d.endsWith('- 12')) return '12';
+
+            if (dateStr.includes('/')) {
+                const p = dateStr.split('/');
+                if (p.length >= 2 && p[1].length === 2) return p[1];
+            } else if (dateStr.includes('-')) {
+                const p = dateStr.split('-');
+                if (p.length >= 2 && p[1].length === 2) return p[1];
+            }
+            return '';
+        }
+
         function rafraichirDashboard() {
             if (!donneesMatriceGlobales || donneesMatriceGlobales.length <= 1) return;
 
@@ -607,28 +634,32 @@
 
                 if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation')) continue;
 
-                let agent = '';
-                for (let c = 0; c < Math.min(cols.length, 8); c++) {
-                    let val = cols[c];
-                    if (val && val.length > 2 && !val.includes('/') && !val.includes('S0') && !val.includes('janvier') && !val.includes('février') && !val.includes('mars') && !val.includes('avril') && !val.includes('mai') && !val.includes('juin') && !val.includes('juillet') && !val.includes('août') && !val.includes('septembre') && !val.includes('octobre') && !val.includes('novembre') && !val.includes('décembre')) {
-                        if (/[A-ZÀ-ÖØ-Þ]/.test(val)) { agent = val; break; }
+                // Col E (idx 4) : Collaborateur (Agent) — extraction propre
+                let agent = String(cols[4] || '').trim();
+                if (!agent || agent.length < 2 || agent.includes('S0') || agent.includes('/')) {
+                    // Recherche de secours d'un nom propre dans les premières colonnes
+                    for (let c = 0; c < Math.min(cols.length, 6); c++) {
+                        let val = cols[c];
+                        if (val && val.length > 3 && /[A-ZÀ-ÖØ-Þ]/.test(val) && !val.includes('/') && !val.includes('S0')) {
+                            agent = val; break;
+                        }
                     }
                 }
-                if (!agent) agent = cols[4] || cols[3] || 'Inconnu';
+                if (!agent) agent = 'Inconnu';
 
                 totalProductionLignes++;
                 agentsSet.add(agent);
 
+                // Site (TANA / DIEGO)
                 let site = '';
                 cols.forEach(col => {
                     let u = col.toUpperCase();
                     if (u === 'TANA' || u === 'DIEGO' || u.includes('ANTANANARIVO')) site = u;
                 });
 
-                let dateDiffusion = '';
-                cols.forEach(col => {
-                    if (col.includes('/') && (col.length === 10 || col.length === 8)) dateDiffusion = col;
-                });
+                // Col G (idx 6) : Date de diffusion
+                let dateDiffusion = cols[6] || '';
+                let moisLigne = extraireMois(dateDiffusion);
 
                 let mauvaiseVal = cols[10] || '';
                 let loupeVal = cols[11] || '';
@@ -659,6 +690,7 @@
 
                 if (!typeNQ || !statsCategories[typeNQ]) continue;
 
+                // Imputabilité (O/N)
                 let imputableVal = '';
                 for (let c = 13; c < cols.length; c++) {
                     let u = String(cols[c] || '').trim().toUpperCase();
@@ -679,15 +711,7 @@
                     if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
                 });
 
-                let moisLigne = '';
-                if (dateDiffusion.includes('/')) {
-                    const p = dateDiffusion.split('/');
-                    if (p.length >= 2) moisLigne = p[1].padStart(2, '0');
-                } else if (dateDiffusion.includes('-')) {
-                    const p = dateDiffusion.split('-');
-                    if (p.length >= 2) moisLigne = p[1].padStart(2, '0');
-                }
-
+                // Filtrage strict par mois (basé sur la Date de diffusion) et par site/agent
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
