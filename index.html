@@ -447,7 +447,7 @@
                 <tr>
                     <th>Catégorie</th>
                     <th>Imputable O (Comptabilisées)</th>
-                    <th>Vides (En attente)</th>
+                    <th>En attente de débrief (P=O, R=Vide)</th>
                     <th>Objectif</th>
                     <th>Taux Réel</th>
                     <th>Statut</th>
@@ -614,10 +614,10 @@
             let agentsSet = new Set();
             
             let statsCategories = {
-                'MAUVAISE': { imputableO: 0, vide: 0, objectif: 0.18 },
-                'NON CONFORME': { imputableO: 0, vide: 0, objectif: 0.07 },
-                'LOUPÉ RÉDACTION': { imputableO: 0, vide: 0, objectif: 0.008 },
-                'LOUPÉ VISUEL / CQTV': { imputableO: 0, vide: 0, objectif: 1.40 }
+                'MAUVAISE': { imputableO: 0, enAttenteDebrief: 0, objectif: 0.18 },
+                'NON CONFORME': { imputableO: 0, enAttenteDebrief: 0, objectif: 0.07 },
+                'LOUPÉ RÉDACTION': { imputableO: 0, enAttenteDebrief: 0, objectif: 0.008 },
+                'LOUPÉ VISUEL / CQTV': { imputableO: 0, enAttenteDebrief: 0, objectif: 1.40 }
             };
 
             let agentsCount = {};
@@ -632,22 +632,14 @@
                 let ligneTexte = cols.join(' ').toLowerCase();
                 if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation') || ligneTexte.trim() === '') continue;
 
-                // Agent (Col E / index 4)
+                // 1. Agent : Strictement la colonne E (index 4)
                 let agent = String(cols[4] || '').trim();
-                if (!agent || agent.length < 2 || agent.includes('S0') || agent.includes('/')) {
-                    for (let c = 0; c < Math.min(cols.length, 6); c++) {
-                        let val = cols[c];
-                        if (val && val.length > 3 && /[A-ZÀ-ÖØ-Þ]/.test(val) && !val.includes('/') && !val.includes('S0')) {
-                            agent = val; break;
-                        }
-                    }
-                }
-                if (!agent) agent = 'Inconnu';
+                if (!agent || agent.length < 2 || agent.includes('/') || agent.includes('S0')) continue;
 
                 totalProductionLignes++;
                 agentsSet.add(agent);
 
-                // Site (Col F / index 5 ou recherche globale)
+                // 2. Site : Colonne F (index 5) ou recherche dans la ligne
                 let site = String(cols[5] || '').toUpperCase();
                 if (!site.includes('TANA') && !site.includes('DIEGO')) {
                     cols.forEach(col => {
@@ -657,11 +649,11 @@
                     });
                 }
 
-                // Date de diffusion (Col G / index 6)
+                // 3. Date de diffusion : Colonne G (index 6)
                 let dateDiffusion = cols[6] || '';
                 let moisLigne = extraireMois(dateDiffusion);
 
-                // Colonnes K, L, M (Constats NQ)
+                // 4. Catégories NQ (Colonnes K, L, M -> index 10, 11, 12)
                 let mauvaiseVal = cols[10] || '';
                 let loupeVal = cols[11] || '';
                 let ncVal = cols[12] || '';
@@ -680,7 +672,6 @@
                 } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
                     typeNQ = 'NON CONFORME';
                 } else {
-                    // Analyse de secours
                     cols.forEach(c => {
                         let cl = c.toLowerCase();
                         if (cl.includes('cqtv') || cl.includes('visuel')) typeNQ = 'LOUPÉ VISUEL / CQTV';
@@ -692,41 +683,34 @@
 
                 if (!typeNQ || !statsCategories[typeNQ]) continue;
 
-                // Imputabilité (O/N)
-                let imputableVal = '';
-                for (let c = 13; c < cols.length; c++) {
-                    let u = String(cols[c] || '').trim().toUpperCase();
-                    if (u === 'O' || u === 'N') { imputableVal = u; break; }
-                }
-                if (!imputableVal) {
-                    cols.forEach(col => {
-                        let u = col.trim().toUpperCase();
-                        if (u === 'O' || u === 'N') imputableVal = u;
-                    });
-                }
+                // 5. Imputable (Colonne P -> index 15)
+                let imputableVal = String(cols[15] || '').trim().toUpperCase();
 
+                // 6. Débrief (Colonne R -> index 17)
+                let debriefVal = String(cols[17] || '').trim().toUpperCase();
+
+                // Règle 1 : Si P = "N", c'est une erreur à ne pas comptabiliser (on ignore)
                 if (imputableVal === 'N') continue;
 
-                // Débrief (O/N)
-                let debriefVal = '';
-                cols.forEach(col => {
-                    let u = col.trim().toUpperCase();
-                    if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
-                });
-
-                // Filtrage
+                // Filtrage par mois, site, agent
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
+                // Règle 2 : Si P = "O"
                 if (imputableVal === 'O') {
                     statsCategories[typeNQ].imputableO++;
                     totalNQ++;
-                    if (debriefVal.includes('O') || debriefVal.includes('OUI')) debriefsRealises++;
-                    else nonDebriefs++;
+
+                    // Règle 3 : Si P = "O" et R est vide -> En attente de débrief
+                    if (debriefVal === '' || debriefVal === '0') {
+                        statsCategories[typeNQ].enAttenteDebrief++;
+                        nonDebriefs++;
+                    } else {
+                        debriefsRealises++;
+                    }
+
                     agentsCount[agent] = (agentsCount[agent] || 0) + 1;
-                } else {
-                    statsCategories[typeNQ].vide++;
                 }
 
                 if (site.includes('TANA')) countTana++;
@@ -770,7 +754,7 @@
                 tableCatHtml += `<tr class="${rowClass}">
                     <td><strong>${index++}. ${cat}</strong></td>
                     <td><strong style="color:var(--success);">${data.imputableO}</strong></td>
-                    <td><span style="color:var(--warning);">${data.vide} (en attente)</span></td>
+                    <td><span style="color:var(--warning);">${data.enAttenteDebrief}</span></td>
                     <td>Obj. ${objStr}</td>
                     <td><strong>${tauxReelStr}</strong></td>
                     <td>${statutHtml}</td>
