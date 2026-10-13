@@ -584,7 +584,6 @@
 
             let agentsSet = new Set();
             
-            // Catégories avec objectifs précis
             let statsCategories = {
                 'MAUVAISE': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.18 },
                 'LOUPÉ RÉDACTION': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.008 },
@@ -601,35 +600,101 @@
                 const cols = donneesMatriceGlobales[i];
                 if (!cols || cols.length < 5) continue;
 
-                // Col E (idx 4) = Collaborateur (Agent)
-                const agent = String(cols[4] || '').trim();
-                if (!agent || agent.toLowerCase().includes('agent') || agent.toLowerCase().includes('collaborateur') || agent.startsWith('S0')) continue;
+                let ligneTexte = cols.join(' ').toLowerCase();
+
+                // Ignorer les lignes d'en-tête ou vides
+                if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation') || ligneTexte.trim() === '') continue;
+
+                // Recherche dynamique de l'agent (on prend la première colonne texte qui ressemble à un nom propre ou non vide après la date)
+                let agent = '';
+                for (let c = 0; c < Math.min(cols.length, 8); c++) {
+                    let val = cols[c];
+                    if (val && val.length > 3 && !val.includes('/') && !val.includes('S0') && !val.includes('janvier') && !val.includes('février') && !val.includes('mars') && !val.includes('avril') && !val.includes('mai') && !val.includes('juin') && !val.includes('juillet') && !val.includes('août') && !val.includes('septembre') && !val.includes('octobre') && !val.includes('novembre') && !val.includes('décembre')) {
+                        // Si la casse est en majuscules ou contient des lettres
+                        if (/[A-ZÀ-ÖØ-Þ]/.test(val)) { agent = val; break; }
+                    }
+                }
+                if (!agent) agent = cols[4] || cols[3] || 'Inconnu';
 
                 totalProductionLignes++;
                 agentsSet.add(agent);
 
-                const site = String(cols[5] || '').toUpperCase();         // Col F : Site
-                const dateDiffusion = String(cols[6] || '');              // Col G : Date de diffusion (pour le mois)
-                const mauvaiseVal = String(cols[10] || '');               // Col K : Mauvaise
-                const loupeVal = String(cols[11] || '');                  // Col L : Loupé (CQTV = visuel, reste = rédaction)
-                const ncVal = String(cols[12] || '');                     // Col M : Non conforme
-                
-                // Col R (idx 17) : Imputable (O/N)
-                let imputableVal = '';
-                if (cols.length >= 18) {
-                    imputableVal = String(cols[17] || '').trim().toUpperCase();
+                // Site (TANA / DIEGO)
+                let site = '';
+                cols.forEach(col => {
+                    let u = col.toUpperCase();
+                    if (u === 'TANA' || u === 'DIEGO' || u.includes('ANTANANARIVO')) site = u;
+                });
+
+                // Date de diffusion (pour extraire le mois)
+                let dateDiffusion = '';
+                cols.forEach(col => {
+                    if (col.includes('/') && (col.length === 10 || col.length === 8)) dateDiffusion = col;
+                });
+
+                // Analyse intelligente des colonnes de constats (Mauvaise, Loupé, Non-conforme)
+                // On parcourt les cellules pour trouver des indices textuels de non-qualité
+                let mauvaiseTexte = cols[10] || '';
+                let loupeTexte = cols[11] || '';
+                let ncTexte = cols[12] || '';
+
+                // Fallback recherche globale si les index fixes sont décalés
+                let typeNQ = '';
+                let foundMauvaise = false, foundLoupe = false, foundNc = false;
+                let loupeDetail = '';
+
+                cols.forEach((col, idx) => {
+                    let textLower = col.toLowerCase();
+                    // Si ce n'est pas "rien sur" ou "rien" et que c'est un constat
+                    if (idx >= 9 && idx <= 13) {
+                        if (textLower.includes('rien sur') || textLower.includes('rien')) return;
+                        if (textLower.includes('cqtv') || textLower.includes('visuel')) {
+                            foundLoupe = true;
+                            loupeDetail = 'visuel';
+                        } else if (textLower.includes('loupé') || textLower.includes('loupe') || textLower.includes('mot-clé') || textLower.includes('mot clé')) {
+                            foundLoupe = true;
+                            loupeDetail = ' redaction';
+                        } else if (textLower.includes('non-conforme') || textLower.includes('non conforme') || textLower.includes('infidèle')) {
+                            foundNc = true;
+                        } else if (textLower.length > 5 && (textLower.includes('lire sur') || textLower.includes('chroniqueuse') || textLower.includes('doublon'))) {
+                            foundMauvaise = true;
+                        }
+                    }
+                });
+
+                // Si les colonnes spécifiques K, L, M ont du contenu explicite
+                if (mauvaiseTexte && !/rien/i.test(mauvaiseTexte)) typeNQ = 'MAUVAISE';
+                else if (loupeTexte && !/rien/i.test(loupeTexte)) {
+                    if (loupeTexte.toLowerCase().includes('cqtv') || loupeTexte.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL / CQTV';
+                    else typeNQ = 'LOUPÉ RÉDACTION';
                 }
+                else if (ncTexte && !/rien/i.test(ncTexte)) typeNQ = 'NON CONFORME';
+                else if (foundLoupe) {
+                    typeNQ = loupeDetail === 'visuel' ? 'LOUPÉ VISUEL / CQTV' : 'LOUPÉ RÉDACTION';
+                } else if (foundNc) {
+                    typeNQ = 'NON CONFORME';
+                } else if (foundMauvaise || (mauvaiseTexte !== '')) {
+                    typeNQ = 'MAUVAISE';
+                } else {
+                    // Si aucune NQ identifiée sur cette ligne
+                    continue;
+                }
+
+                // Recherche de la colonne Imputable (O/N)
+                let imputableVal = '';
+                cols.forEach(col => {
+                    let u = col.trim().toUpperCase();
+                    if (u === 'O' || u === 'N') imputableVal = u;
+                });
 
                 // Recherche du débrief (O/N)
                 let debriefVal = '';
-                for (let idx = 13; idx < cols.length; idx++) {
-                    let val = String(cols[idx] || '').toUpperCase();
-                    if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
-                        debriefVal = val; break;
-                    }
-                }
+                cols.forEach(col => {
+                    let u = col.trim().toUpperCase();
+                    if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
+                });
 
-                // Extraction du mois basé rigoureusement sur la Date de diffusion (Col G)
+                // Extraction du mois basé sur la Date de diffusion
                 let moisLigne = '';
                 if (dateDiffusion.includes('/')) {
                     const p = dateDiffusion.split('/');
@@ -639,31 +704,13 @@
                     if (p.length >= 2) moisLigne = p[1].padStart(2, '0');
                 }
 
-                if (moisActif !== 'toutes' && moisLigne !== moisActif) continue;
-                if (siteFiltre !== 'TOUS' && !site.includes(siteFiltre)) continue;
+                if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
+                if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
-
-                // Identification de la catégorie via Colonnes K, L, M
-                let typeNQ = '';
-                let loupeLower = loupeVal.toLowerCase();
-
-                if (mauvaiseVal !== '' && !/rien/i.test(mauvaiseVal)) {
-                    typeNQ = 'MAUVAISE';
-                } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
-                    if (loupeLower.includes('cqtv') || loupeLower.includes('visuel')) {
-                        typeNQ = 'LOUPÉ VISUEL / CQTV';
-                    } else {
-                        typeNQ = 'LOUPÉ RÉDACTION';
-                    }
-                } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
-                    typeNQ = 'NON CONFORME';
-                } else {
-                    continue;
-                }
 
                 if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.10 };
 
-                // Comptabilisation stricte selon Col R (Imputable O / N / Vide)
+                // Comptabilisation stricte selon Imputable O / N / Vide
                 if (imputableVal === 'O') {
                     statsCategories[typeNQ].imputableO++;
                     totalNQ++;
@@ -676,7 +723,7 @@
                     statsCategories[typeNQ].vide++; // Vide = en attente
                 }
 
-                if (site.includes('TANA') || site.includes('ANTANANARIVO')) countTana++;
+                if (site.includes('TANA')) countTana++;
                 if (site.includes('DIEGO')) countDiego++;
             }
 
@@ -695,7 +742,7 @@
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage du tableau avec les formules et ventilation Imputable O / N / Vide
+            // Remplissage du tableau des catégories
             let tableCatHtml = '';
             let index = 1;
             let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
@@ -703,7 +750,6 @@
             for (let [cat, data] of Object.entries(statsCategories)) {
                 let tauxReelNum = 0;
 
-                // Calcul du taux basé uniquement sur les imputables 'O'
                 if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
                     tauxReelNum = (data.imputableO / baseProd) * 100;
                 } else if (cat === 'LOUPÉ RÉDACTION') {
