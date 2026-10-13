@@ -16,6 +16,7 @@
             --danger: #dc2626;
             --warning: #d97706;
             --success: #059669;
+            --table-hover: #f1f5f9;
         }
 
         [data-theme="dark"] {
@@ -28,6 +29,7 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --success: #34d399;
+            --table-hover: #273548;
         }
 
         * {
@@ -42,12 +44,8 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             padding: 24px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
         }
 
-        /* HEADER PROFESSIONNEL STYLE LIRIS */
         header {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 1px solid #334155;
@@ -60,6 +58,8 @@
             box-shadow: 0 6px 15px -3px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         header::before {
@@ -76,6 +76,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            flex: 1;
         }
 
         header h1 {
@@ -139,52 +140,165 @@
             white-space: nowrap;
         }
 
-        /* CONTENEUR DU TABLEAU DE BORD INTÉGRÉ */
-        .dashboard-container {
-            flex-grow: 1;
+        .filters-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .filter-group select {
+            width: 100%;
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            min-height: 75vh;
-        }
-
-        .dashboard-header-bar {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
             font-size: 13px;
             font-weight: 600;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .dashboard-header-bar a {
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .kpi-card h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .kpi-card .value {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .kpi-card .subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2col { grid-template-columns: 1fr; }
+        }
+
+        .card-section {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-section h2 {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 10px 8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        tbody tr:hover {
+            background-color: var(--table-hover);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        .status-surveiller { background: #fef3c7; color: #b45309; }
+        .status-depasse { background: #fee2e2; color: #991b1b; }
+
+        .progress-item {
+            margin-bottom: 16px;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .progress-bar-bg {
+            background: var(--border-color);
+            border-radius: 6px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            background: var(--primary);
+            height: 100%;
+            border-radius: 6px;
+        }
+        
+        .link-sheets {
+            display: block;
+            text-align: right;
+            margin-bottom: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .link-sheets a {
             color: var(--primary);
             text-decoration: none;
         }
-
-        .dashboard-header-bar a:hover {
+        .link-sheets a:hover {
             text-decoration: underline;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            flex-grow: 1;
-            border: none;
-            background-color: #ffffff;
-            min-height: 75vh;
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
+    <!-- HEADER STYLE LIRIS -->
     <header>
         <div class="header-content">
             <h1>QUALITY PERFORMANCE CENTER <span>— AUDIO</span></h1>
@@ -198,27 +312,129 @@
         <div class="header-slogan">« Mesurer la qualité. Comprendre les écarts. Piloter la performance. »</div>
     </header>
 
-    <!-- SECTION PRINCIPALE INTÉGRÉE -->
-    <div class="dashboard-container">
-        <div class="dashboard-header-bar">
-            <span>📊 Source active : Onglet « Qualité » (PPQ 2026)</span>
-            <a href="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468#gid=1183773468" target="_blank">
-                Ouvrir dans Google Sheets ↗
-            </a>
+    <div class="link-sheets">
+        <a href="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468#gid=1183773468" target="_blank">
+            Consulter la source Google Sheets ↗
+        </a>
+    </div>
+
+    <!-- FILTERS BAR -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <select id="filter-periode" onchange="rafraichirTableauDeBord()">
+                <option value="toutes">Période : Toutes</option>
+                <option value="janvier" selected>Janvier</option>
+                <option value="février">Février</option>
+                <option value="mars">Mars</option>
+                <option value="avril">Avril</option>
+                <option value="mai">Mai</option>
+                <option value="juin">Juin</option>
+                <option value="juillet">Juillet</option>
+                <option value="août">Août</option>
+                <option value="septembre">Septembre</option>
+                <option value="octobre">Octobre</option>
+                <option value="novembre">Novembre</option>
+                <option value="décembre">Décembre</option>
+            </select>
         </div>
-        
-        <!-- Intégration iframe ciblée précisément sur l'onglet Qualité -->
-        <iframe src="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468&amp;single=true&amp;widget=true&amp;headers=false"></iframe>
+        <div class="filter-group">
+            <select id="filter-site" onchange="rafraichirTableauDeBord()">
+                <option value="tous">Site : Tous</option>
+                <option value="TANA">TANA</option>
+                <option value="DIEGO">DIEGO</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <select id="filter-agent" onchange="rafraichirTableauDeBord()">
+                <option value="tous">Agent : Tous les agents</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <h3>NQ Validées (Cumul)</h3>
+            <div class="value" id="kpi-nq">0</div>
+            <div class="subtitle">Total (OK et Vides, hors KO)</div>
+        </div>
+        <div class="kpi-card">
+            <h3>Débriefs Réalisés</h3>
+            <div class="value" id="kpi-debrief" style="color: var(--success);">0</div>
+            <div class="subtitle">Lignes débriefées</div>
+        </div>
+        <div class="kpi-card">
+            <h3>Lignes Non Débriefées</h3>
+            <div class="value" id="kpi-non-debrief" style="color: var(--danger);">0</div>
+            <div class="subtitle">En attente de débrief</div>
+        </div>
+    </div>
+
+    <!-- SECTION CATÉGORIES & PLAN D'ACTION -->
+    <div class="grid-2col">
+        <div class="card-section">
+            <h2>Suivi par Type de Non-Qualité</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type de Non-Qualité</th>
+                        <th>Total Cas</th>
+                    </tr>
+                </thead>
+                <tbody id="table-categories">
+                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Chargement des données...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-section">
+            <h2>Synthèse & Plan d'Action</h2>
+            <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px; color: var(--text-muted);">
+                Analyse des données en cours...
+            </div>
+        </div>
+    </div>
+
+    <!-- AGENTS À SUIVRE & NQ PAR SITE -->
+    <div class="grid-2col">
+        <div class="card-section">
+            <h2>Agents à accompagner (Flop NQ)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Cumul Erreurs NQ</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody id="agents-table-body">
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-section">
+            <h2>NQ par Site</h2>
+            <div class="progress-item">
+                <div class="progress-info"><span>TANA</span><span id="stat-tana">0 NQ</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-tana" style="width: 0%;"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-info"><span>DIEGO</span><span id="stat-diego">0 NQ</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-diego" style="width: 0%; background: var(--danger);"></div></div>
+            </div>
+        </div>
     </div>
 
     <script>
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468';
+
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
         function toggleTheme() {
             const html = document.documentElement;
             const themeText = document.getElementById('theme-text');
             const btnTheme = document.getElementById('btn-theme');
-            
             if (html.getAttribute('data-theme') === 'dark') {
                 html.setAttribute('data-theme', 'light');
                 themeText.innerText = 'Mode Sombre';
@@ -229,6 +445,112 @@
                 btnTheme.innerHTML = '☀️ Mode Clair';
             }
         }
-    </script>
-</body>
-</html>
+
+        function parseCSVLine(text) {
+            let result = [], inQuotes = false, current = '';
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                if (char === '"') inQuotes = !inQuotes;
+                else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+                else current += char;
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        async function rafraichirTableauDeBord() {
+            try {
+                const response = await fetch(csvUrl);
+                const data = await response.text();
+                const lignes = data.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lignes.length <= 1) return;
+
+                const moisSelectionne = document.getElementById('filter-periode').value.toLowerCase();
+                const siteSelectionne = document.getElementById('filter-site').value.toUpperCase();
+                const agentSelectionne = document.getElementById('filter-agent').value;
+
+                let agentsSet = new Set(), donneesFiltrees = [];
+
+                for (let i = 1; i < lignes.length; i++) {
+                    const cols = parseCSVLine(lignes[i]).map(c => c.replace(/"/g, '').trim());
+                    if (cols.length < 8) continue;
+
+                    const dateDiffusion = cols[6] || ''; // Col G
+                    const site = (cols[5] || '').toUpperCase(); // Col F
+                    const agent = cols[7] || 'Inconnu'; // Col H
+
+                    const mauvaiseVal = cols[10] || ''; // Col K
+                    const loupeVal = cols[11] || '';    // Col L
+                    const ncVal = cols[12] || '';       // Col M
+                    const validationP = (cols[15] || '').toUpperCase(); // Col P
+
+                    let debriefVal = '';
+                    for (let idx = 14; idx < cols.length; idx++) {
+                        let val = cols[idx].toUpperCase();
+                        if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
+                            debriefVal = val; break;
+                        }
+                    }
+
+                    if (agent && agent !== 'Inconnu') agentsSet.add(agent);
+
+                    let moisLigne = '';
+                    const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+                    for (let m of moisNoms) {
+                        if (dateDiffusion.toLowerCase().includes(m)) { moisLigne = m; break; }
+                    }
+
+                    if (validationP.includes('N') && !validationP.includes('NON')) continue; // Exclure KO
+
+                    let typeNQ = '';
+                    if (mauvaiseVal !== '' && !mauvaiseVal.toLowerCase().includes('rien')) typeNQ = 'MAUVAISE';
+                    else if (loupeVal !== '' && !loupeVal.toLowerCase().includes('rien')) {
+                        if (loupeVal.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL';
+                        else if (loupeVal.toLowerCase().includes('redact')) typeNQ = 'LOUPÉ RÉDACTION';
+                        else typeNQ = 'LOUPÉ';
+                    } else if (ncVal !== '' && !ncVal.toLowerCase().includes('rien')) typeNQ = 'NON CONFORME';
+                    else continue;
+
+                    let matchMois = (moisSelectionne === 'toutes' || moisLigne === moisSelectionne);
+                    let matchSite = (siteSelectionne === 'TOUS' || site.includes(siteSelectionne));
+                    let matchAgent = (agentSelectionne === 'tous' || agent === agentSelectionne);
+
+                    if (matchMois && matchSite && matchAgent) donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
+                }
+
+                const selectAgent = document.getElementById('filter-agent');
+                if (selectAgent.options.length <= 1) {
+                    Array.from(agentsSet).sort().forEach(ag => {
+                        let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
+                        selectAgent.appendChild(opt);
+                    });
+                }
+
+                let totalNQ = donneesFiltrees.length, debriefsRealises = 0, nonDebriefs = 0;
+                let categoriesCount = {}, agentsCount = {}, countTana = 0, countDiego = 0;
+
+                donneesFiltrees.forEach(row => {
+                    if (row.debrief.includes('O') || row.debrief.includes('OUI')) debriefsRealises++;
+                    else nonDebriefs++;
+
+                    categoriesCount[row.typeNQ] = (categoriesCount[row.typeNQ] || 0) + 1;
+                    agentsCount[row.agent] = (agentsCount[row.agent] || 0) + 1;
+
+                    if (row.site.includes('TANA')) countTana++;
+                    if (row.site.includes('DIEGO')) countDiego++;
+                });
+
+                document.getElementById('kpi-nq').textContent = totalNQ;
+                document.getElementById('kpi-debrief').textContent = debriefsRealises;
+                document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
+
+                let catHtml = '';
+                for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
+                    catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
+                }
+                document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette période</td></tr>`;
+
+                let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+                let agentHtml = '';
+                for (let [ag, cnt] of sortedAgents) {
+                    let badgeClass = cnt >= 5 ? 'status-depasse' : 'status-surveiller';
