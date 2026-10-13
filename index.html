@@ -16,7 +16,6 @@
             --danger: #dc2626;
             --warning: #d97706;
             --success: #059669;
-            --input-bg: #ffffff;
             --table-hover: #f1f5f9;
         }
 
@@ -30,7 +29,6 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --success: #34d399;
-            --input-bg: #0f172a;
             --table-hover: #273548;
         }
 
@@ -118,10 +116,8 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            transition: all 0.2s;
             width: fit-content;
         }
-
         .btn-theme-header:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
@@ -144,7 +140,7 @@
             white-space: nowrap;
         }
 
-        /* ZONE D'IMPORT STYLE RINO / LIRIS */
+        /* ZONE D'IMPORT DU FICHIER CSV */
         .import-bar {
             background: var(--bg-card);
             border: 2px dashed var(--border-color);
@@ -346,11 +342,11 @@
         <div class="header-slogan">« Mesurer la qualité. Comprendre les écarts. Piloter la performance. »</div>
     </header>
 
-    <!-- ZONE D'IMPORT FICHIER CSV -->
+    <!-- ZONE D'IMPORT DU FICHIER CSV DE L'ONGLET QUALITÉ -->
     <div class="import-bar">
         <div>
-            <strong style="font-size: 13px; display: block; margin-bottom: 2px;">📂 Glissez ou importez votre fichier CSV</strong>
-            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Sélectionnez votre export CSV pour mettre à jour le dashboard</span>
+            <strong style="font-size: 13px; display: block; margin-bottom: 2px;">📂 Importer l'onglet « Qualité » (PPQ 2026)</strong>
+            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Glissez votre fichier CSV exporté ici pour mettre à jour le dashboard</span>
         </div>
         <label class="btn-import">
             📁 Choisir le fichier CSV
@@ -361,31 +357,31 @@
     <!-- FILTERS BAR -->
     <div class="filters-bar">
         <div class="filter-group">
-            <select id="filter-periode" onchange="traiterDonneesCSV()">
+            <select id="filter-periode" onchange="traiterDonneesQualite()">
                 <option value="toutes">Période : Toutes</option>
-                <option value="janvier">Janvier</option>
-                <option value="février">Février</option>
-                <option value="mars">Mars</option>
-                <option value="avril">Avril</option>
-                <option value="mai">Mai</option>
-                <option value="juin">Juin</option>
-                <option value="juillet">Juillet</option>
-                <option value="août">Août</option>
-                <option value="septembre">Septembre</option>
-                <option value="octobre" selected>Octobre</option>
-                <option value="novembre">Novembre</option>
-                <option value="décembre">Décembre</option>
+                <option value="01">Janvier</option>
+                <option value="02">Février</option>
+                <option value="03">Mars</option>
+                <option value="04">Avril</option>
+                <option value="05">Mai</option>
+                <option value="06">Juin</option>
+                <option value="07">Juillet</option>
+                <option value="08">Août</option>
+                <option value="09">Septembre</option>
+                <option value="10" selected>Octobre</option>
+                <option value="11">Novembre</option>
+                <option value="12">Décembre</option>
             </select>
         </div>
         <div class="filter-group">
-            <select id="filter-site" onchange="traiterDonneesCSV()">
+            <select id="filter-site" onchange="traiterDonneesQualite()">
                 <option value="tous">Site : Tous</option>
                 <option value="TANA">TANA</option>
                 <option value="DIEGO">DIEGO</option>
             </select>
         </div>
         <div class="filter-group">
-            <select id="filter-agent" onchange="traiterDonneesCSV()">
+            <select id="filter-agent" onchange="traiterDonneesQualite()">
                 <option value="tous">Agent : Tous les agents</option>
             </select>
         </div>
@@ -422,7 +418,7 @@
                     </tr>
                 </thead>
                 <tbody id="table-categories">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Veuillez importer votre fichier de données...</td></tr>
+                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Veuillez importer votre fichier CSV Qualité...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -430,7 +426,7 @@
         <div class="card-section">
             <h2>Synthèse & Plan d'Action</h2>
             <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="color: var(--text-muted);">En attente de chargement d'un fichier...</div>
+                <div style="color: var(--text-muted);">En attente de chargement...</div>
             </div>
         </div>
     </div>
@@ -507,15 +503,15 @@
             reader.onload = function(e) {
                 const text = e.target.result;
                 donneesBrutesCSV = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                traiterDonneesCSV();
+                traiterDonneesQualite();
             };
             reader.readAsText(file, 'UTF-8');
         }
 
-        function traiterDonneesCSV() {
+        function traiterDonneesQualite() {
             if (donneesBrutesCSV.length <= 1) return;
 
-            const moisSelectionne = document.getElementById('filter-periode').value.toLowerCase();
+            const moisSelectionne = document.getElementById('filter-periode').value;
             const siteSelectionne = document.getElementById('filter-site').value.toUpperCase();
             const agentSelectionne = document.getElementById('filter-agent').value;
 
@@ -523,51 +519,65 @@
 
             for (let i = 1; i < donneesBrutesCSV.length; i++) {
                 const cols = parseCSVLine(donneesBrutesCSV[i]).map(c => c.replace(/"/g, '').trim());
-                if (cols.length < 8) continue;
+                if (cols.length < 16) continue;
 
-                const dateDiffusion = cols[6] || ''; // Col G
-                const site = (cols[5] || '').toUpperCase(); // Col F
-                const agent = cols[7] || 'Inconnu'; // Col H
+                // Structure exacte de l'onglet Qualité (PPQ 2026) :
+                const site = (cols[5] || '').toUpperCase();         // Colonne F : Site
+                const dateDiffusion = cols[6] || '';                // Colonne G : Date de diffusion
+                const agent = cols[7] || 'Inconnu';                 // Colonne H : Agent / Collaborateur
+                constvaiseVal = cols[10] || '';                     // Colonne K : Mauvaise
+                const loupeVal = cols[11] || '';                    // Colonne L : Loupé
+                const ncVal = cols[12] || '';                       // Colonne M : Non Conforme
+                const validationP = (cols[15] || '').toUpperCase(); // Colonne P : Statut / Comptabilisation
 
-                const mauvaiseVal = cols[10] || ''; // Col K
-                const loupeVal = cols[11] || '';    // Col L
-                const ncVal = cols[12] || '';       // Col M
-                const validationP = (cols[15] || '').toUpperCase(); // Col P
-
+                // Recherche d'un débrief dans les colonnes suivantes si présent
                 let debriefVal = '';
                 for (let idx = 14; idx < cols.length; idx++) {
-                    let val = cols[idx].toUpperCase();
+                    let val = (cols[idx] || '').toUpperCase();
                     if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
                         debriefVal = val; break;
                     }
                 }
 
-                if (agent && agent !== 'Inconnu') agentsSet.add(agent);
+                if (agent && agent !== 'Inconnu' && agent !== 'TRIGRAMME') agentsSet.add(agent);
 
+                // Extraction du mois depuis la date (Format JJ/MM/AAAA ou AAAA-MM-JJ)
                 let moisLigne = '';
-                const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-                for (let m of moisNoms) {
-                    if (dateDiffusion.toLowerCase().includes(m)) { moisLigne = m; break; }
+                if (dateDiffusion.includes('/')) {
+                    const parts = dateDiffusion.split('/');
+                    if (parts.length >= 2) moisLigne = parts[1].padStart(2, '0');
+                } else if (dateDiffusion.includes('-')) {
+                    const parts = dateDiffusion.split('-');
+                    if (parts.length >= 2) moisLigne = parts[1].padStart(2, '0');
                 }
 
-                if (validationP.includes('N') && !validationP.includes('NON')) continue; // Exclure KO
+                // Règle Col P : "N" = KO/exclu, vide ou "O" = inclus
+                if (validationP.includes('N') && !validationP.includes('NON')) continue;
 
+                // Identification du type de non-qualité (K, L ou M)
                 let typeNQ = '';
-                if (mauvaiseVal !== '' && !mauvaiseVal.toLowerCase().includes('rien')) typeNQ = 'MAUVAISE';
-                else if (loupeVal !== '' && !loupeVal.toLowerCase().includes('rien')) {
-                    if (loupeVal.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL';
-                    else if (loupeVal.toLowerCase().includes('redact')) typeNQ = 'LOUPÉ RÉDACTION';
+                if (-vaiseVal !== '' && !/rien/i.test(-vaiseVal)) {
+                    typeNQ = 'MAUVAISE';
+                } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
+                    if (/visuel/i.test(loupeVal)) typeNQ = 'LOUPÉ VISUEL';
+                    else if (/redact|rédaction/i.test(loupeVal)) typeNQ = 'LOUPÉ RÉDACTION';
                     else typeNQ = 'LOUPÉ';
-                } else if (ncVal !== '' && !ncVal.toLowerCase().includes('rien')) typeNQ = 'NON CONFORME';
-                else continue;
+                } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
+                    typeNQ = 'NON CONFORME';
+                } else {
+                    continue;
+                }
 
                 let matchMois = (moisSelectionne === 'toutes' || moisLigne === moisSelectionne);
                 let matchSite = (siteSelectionne === 'TOUS' || site.includes(siteSelectionne));
                 let matchAgent = (agentSelectionne === 'tous' || agent === agentSelectionne);
 
-                if (matchMois && matchSite && matchAgent) donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
+                if (matchMois && matchSite && matchAgent) {
+                    donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
+                }
             }
 
+            // Mise à jour de la liste déroulante des agents
             const selectAgent = document.getElementById('filter-agent');
             const agentActuel = selectAgent.value;
             selectAgent.innerHTML = '<option value="tous">Agent : Tous les agents</option>';
@@ -577,6 +587,7 @@
                 selectAgent.appendChild(opt);
             });
 
+            // Calculs et statistiques
             let totalNQ = donneesFiltrees.length, debriefsRealises = 0, nonDebriefs = 0;
             let categoriesCount = {}, agentsCount = {}, countTana = 0, countDiego = 0;
 
@@ -595,12 +606,14 @@
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
 
+            // Remplissage du tableau des types de non-qualité
             let catHtml = '';
             for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
                 catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
             }
-            document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette sélection</td></tr>`;
+            document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette période</td></tr>`;
 
+            // Remplissage du top agents (Flop NQ)
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
             for (let [ag, cnt] of sortedAgents) {
@@ -610,11 +623,13 @@
             }
             document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
+            // Barres de progression par site
             document.getElementById('stat-tana').textContent = countTana + ' NQ';
             document.getElementById('bar-tana').style.width = (totalNQ > 0 ? (countTana / totalNQ) * 100 : 0) + '%';
             document.getElementById('stat-diego').textContent = countDiego + ' NQ';
             document.getElementById('bar-diego').style.width = (totalNQ > 0 ? (countDiego / totalNQ) * 100 : 0) + '%';
 
+            // Synthèse et plan d'action
             document.getElementById('pa-container').innerHTML = `<div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;"><strong>Synthèse :</strong> ${totalNQ} erreur(s) comptabilisée(s). ${nonDebriefs} en attente de débriefing.</div>`;
         }
     </script>
