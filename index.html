@@ -367,7 +367,7 @@
 
     <div class="paste-panel">
         <h3>📋 Copier-coller direct de votre onglet Qualité (Google Sheets)</h3>
-        <textarea id="raw-data-input" class="paste-textarea" placeholder="Sélectionnez vos lignes dans Google Sheets, faites Ctrl+C, puis collez (Ctrl+V) ici..."></textarea>
+        <textarea id="raw-data-input" class="paste-textarea" placeholder="Sélectionnez vos lignes dans Google Sheets (depuis l'en-tête Agent jusqu'à la dernière ligne), faites Ctrl+C, puis collez (Ctrl+V) ici..."></textarea>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
             <button class="btn-update" onclick="traiterDonneesCollees()">⚡ Mettre à jour le Tableau de Bord</button>
             <span id="debug-status" style="font-size: 11px; color: var(--warning);">En attente de données...</span>
@@ -551,7 +551,7 @@
             const debugEl = document.getElementById('debug-status');
 
             if (!texteColle) {
-                debugEl.textContent = "Erreur : La zone de texte est vide !";
+                debugEl.textContent = "Erreur : Zone vide !";
                 alert("Veuillez d'abord coller vos données dans la zone de texte.");
                 return;
             }
@@ -584,7 +584,7 @@
 
             let agentsSet = new Set();
             
-            // Catégories avec objectifs précis
+            // Catégories avec leurs objectifs précis
             let statsCategories = {
                 'MAUVAISE': { ok: 0, cont: 0, vide: 0, objectif: 0.18 },
                 'LOUPÉ RÉDACTION': { ok: 0, cont: 0, vide: 0, objectif: 0.008 },
@@ -601,22 +601,18 @@
                 const cols = donneesMatriceGlobales[i];
                 if (!cols || cols.length < 5) continue;
 
-                // Indexation directe basée sur l'ordre exact de votre Google Sheets (Colonnes A à R)
                 // Col E (idx 4) = Collaborateur (Agent)
-                // Col F (idx 5) = Site
-                // Col G (idx 6) = Date de diffusion
-                // Col J (idx 9) = Catégorie (AUTO) [Mauvaise, Loupé, Non-conforme]
-                // Col L (idx 11) = Constat de non qualité (Loupé) [ex: CQTV]
                 const agent = String(cols[4] || '').trim();
                 if (!agent || agent.toLowerCase().includes('agent') || agent.toLowerCase().includes('collaborateur') || agent.startsWith('S0')) continue;
 
                 totalProductionLignes++;
                 agentsSet.add(agent);
 
-                const site = String(cols[5] || '').toUpperCase();         
-                const dateDiffusion = String(cols[6] || '');                
-                const catAuto = String(cols[9] || '').toUpperCase();
-                const constatLoupe = String(cols[11] || '').toLowerCase();
+                const site = String(cols[5] || '').toUpperCase();         // Col F : Site
+                const dateDiffusion = String(cols[6] || '');              // Col G : Date de diffusion (pour le mois)
+                const mauvaiseVal = String(cols[10] || '');               // Col K : Mauvaise
+                const loupeVal = String(cols[11] || '');                  // Col L : Loupé
+                const ncVal = String(cols[12] || '');                     // Col M : Non conforme
 
                 // Recherche du débrief (O/N) dans les colonnes de droite
                 let debriefVal = '';
@@ -627,7 +623,7 @@
                     }
                 }
 
-                // Extraction du mois depuis la date de diffusion
+                // Extraction rigoureuse du mois basé sur la Date de diffusion (Col G)
                 let moisLigne = '';
                 if (dateDiffusion.includes('/')) {
                     const p = dateDiffusion.split('/');
@@ -641,16 +637,19 @@
                 if (siteFiltre !== 'TOUS' && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
+                // Identification basée sur Colonnes K, L, M
                 let typeNQ = '';
-                if (catAuto.includes('MAUVAISE')) {
+                let loupeLower = loupeVal.toLowerCase();
+
+                if (mauvaiseVal !== '' && !/rien/i.test(mauvaiseVal)) {
                     typeNQ = 'MAUVAISE';
-                } else if (catAuto.includes('LOUPÉ') || catAuto.includes('LOUPE')) {
-                    if (constatLoupe.includes('cqtv') || constatLoupe.includes('visuel')) {
+                } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
+                    if (loupeLower.includes('cqtv') || loupeLower.includes('visuel')) {
                         typeNQ = 'LOUPÉ VISUEL / CQTV';
                     } else {
                         typeNQ = 'LOUPÉ RÉDACTION';
                     }
-                } else if (catAuto.includes('CONFORME')) {
+                } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
                     typeNQ = 'NON CONFORME';
                 } else {
                     continue;
