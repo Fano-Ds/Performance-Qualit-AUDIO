@@ -16,6 +16,7 @@
             --danger: #dc2626;
             --warning: #d97706;
             --success: #059669;
+            --input-bg: #ffffff;
             --table-hover: #f1f5f9;
         }
 
@@ -29,6 +30,7 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --success: #34d399;
+            --input-bg: #0f172a;
             --table-hover: #273548;
         }
 
@@ -80,7 +82,7 @@
         }
 
         header h1 {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
             color: #ffffff;
             letter-spacing: 0.8px;
@@ -95,6 +97,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            width: fit-content;
         }
 
         .datetime {
@@ -107,7 +110,7 @@
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #94a3b8;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 500;
@@ -115,6 +118,7 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            transition: all 0.2s;
             width: fit-content;
         }
 
@@ -171,7 +175,7 @@
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 18px;
+            padding: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
@@ -184,7 +188,7 @@
         }
 
         .kpi-card .value {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             margin-bottom: 4px;
             color: var(--text-main);
@@ -227,19 +231,20 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 11px;
             text-align: left;
+            margin-bottom: 20px;
         }
 
         th {
             color: var(--text-muted);
             font-weight: 700;
-            padding: 10px 8px;
+            padding: 8px 6px;
             border-bottom: 2px solid var(--border-color);
         }
 
         td {
-            padding: 12px 8px;
+            padding: 10px 6px;
             border-bottom: 1px solid var(--border-color);
             color: var(--text-main);
             font-weight: 500;
@@ -250,7 +255,7 @@
         }
 
         .status-badge {
-            padding: 4px 8px;
+            padding: 4px 6px;
             border-radius: 6px;
             font-size: 10px;
             font-weight: 700;
@@ -259,7 +264,7 @@
         .status-depasse { background: #fee2e2; color: #991b1b; }
 
         .progress-item {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         .progress-info {
             display: flex;
@@ -267,38 +272,23 @@
             font-size: 13px;
             font-weight: 700;
             margin-bottom: 6px;
+            color: var(--text-main);
         }
         .progress-bar-bg {
             background: var(--border-color);
-            border-radius: 6px;
-            height: 10px;
+            border-radius: 4px;
+            height: 8px;
             overflow: hidden;
         }
         .progress-bar-fill {
             background: var(--primary);
             height: 100%;
-            border-radius: 6px;
-        }
-        
-        .link-sheets {
-            display: block;
-            text-align: right;
-            margin-bottom: 15px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .link-sheets a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        .link-sheets a:hover {
-            text-decoration: underline;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER STYLE LIRIS -->
     <header>
         <div class="header-content">
             <h1>QUALITY PERFORMANCE CENTER <span>— AUDIO</span></h1>
@@ -312,18 +302,11 @@
         <div class="header-slogan">« Mesurer la qualité. Comprendre les écarts. Piloter la performance. »</div>
     </header>
 
-    <div class="link-sheets">
-        <a href="https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/edit?gid=1183773468#gid=1183773468" target="_blank">
-            Consulter la source Google Sheets ↗
-        </a>
-    </div>
-
-    <!-- FILTERS BAR -->
     <div class="filters-bar">
         <div class="filter-group">
             <select id="filter-periode" onchange="rafraichirTableauDeBord()">
                 <option value="toutes">Période : Toutes</option>
-                <option value="janvier" selected>Janvier</option>
+                <option value="janvier">Janvier</option>
                 <option value="février">Février</option>
                 <option value="mars">Mars</option>
                 <option value="avril">Avril</option>
@@ -332,7 +315,7 @@
                 <option value="juillet">Juillet</option>
                 <option value="août">Août</option>
                 <option value="septembre">Septembre</option>
-                <option value="octobre">Octobre</option>
+                <option value="octobre" selected>Octobre</option>
                 <option value="novembre">Novembre</option>
                 <option value="décembre">Décembre</option>
             </select>
@@ -351,7 +334,6 @@
         </div>
     </div>
 
-    <!-- KPI CARDS -->
     <div class="kpi-container">
         <div class="kpi-card">
             <h3>NQ Validées (Cumul)</h3>
@@ -370,7 +352,6 @@
         </div>
     </div>
 
-    <!-- SECTION CATÉGORIES & PLAN D'ACTION -->
     <div class="grid-2col">
         <div class="card-section">
             <h2>Suivi par Type de Non-Qualité</h2>
@@ -382,20 +363,19 @@
                     </tr>
                 </thead>
                 <tbody id="table-categories">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Chargement des données...</td></tr>
+                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Chargement...</td></tr>
                 </tbody>
             </table>
         </div>
 
         <div class="card-section">
             <h2>Synthèse & Plan d'Action</h2>
-            <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px; color: var(--text-muted);">
-                Analyse des données en cours...
+            <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="color: var(--text-muted);">Analyse en cours...</div>
             </div>
         </div>
     </div>
 
-    <!-- AGENTS À SUIVRE & NQ PAR SITE -->
     <div class="grid-2col">
         <div class="card-section">
             <h2>Agents à accompagner (Flop NQ)</h2>
@@ -427,7 +407,8 @@
     </div>
 
     <script>
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468';
+        // Remplacez l'URL ci-dessous par le lien CSV publié depuis Fichier > Partager > Publier sur le web
+        const csvUrl = 'METTRE_ICI_VOTRE_LIEN_CSV_PUBLIE_SUR_LE_WEB';
 
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
@@ -500,7 +481,7 @@
                         if (dateDiffusion.toLowerCase().includes(m)) { moisLigne = m; break; }
                     }
 
-                    if (validationP.includes('N') && !validationP.includes('NON')) continue; // Exclure KO
+                    if (validationP.includes('N') && !validationP.includes('NON')) continue;
 
                     let typeNQ = '';
                     if (mauvaiseVal !== '' && !mauvaiseVal.toLowerCase().includes('rien')) typeNQ = 'MAUVAISE';
@@ -548,9 +529,30 @@
                 for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
                     catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
                 }
-                document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette période</td></tr>`;
+                document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
                 let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
                 let agentHtml = '';
                 for (let [ag, cnt] of sortedAgents) {
                     let badgeClass = cnt >= 5 ? 'status-depasse' : 'status-surveiller';
+                    let badgeText = cnt >= 5 ? 'Critique' : 'À surveiller';
+                    agentHtml += `<tr><td><strong>${ag}</strong></td><td><strong>${cnt}</strong></td><td><span class="status-badge ${badgeClass}">${badgeText}</span></td></tr>`;
+                }
+                document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
+
+                document.getElementById('stat-tana').textContent = countTana + ' NQ';
+                document.getElementById('bar-tana').style.width = (totalNQ > 0 ? (countTana / totalNQ) * 100 : 0) + '%';
+                document.getElementById('stat-diego').textContent = countDiego + ' NQ';
+                document.getElementById('bar-diego').style.width = (totalNQ > 0 ? (countDiego / totalNQ) * 100 : 0) + '%';
+
+                document.getElementById('pa-container').innerHTML = `<div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;"><strong>Synthèse :</strong> ${totalNQ} erreur(s) comptabilisée(s). ${nonDebriefs} en attente de débriefing.</div>`;
+
+            } catch (err) {
+                console.error("Erreur :", err);
+            }
+        }
+
+        rafraichirTableauDeBord();
+    </script>
+</body>
+</html>
