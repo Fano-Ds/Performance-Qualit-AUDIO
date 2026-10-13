@@ -111,6 +111,50 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
+        /* PANNEAU DE SAISIE PAR COPIER-COLLER DIRECT */
+        .paste-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(45, 212, 191, 0.1);
+        }
+        .paste-panel h3 {
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .paste-textarea {
+            width: 100%;
+            height: 100px;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 11px;
+            font-family: monospace;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .paste-textarea:focus { border-color: var(--primary); }
+        .btn-update {
+            background: var(--primary);
+            color: #042f2e;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-update:hover { opacity: 0.9; }
+
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -166,29 +210,6 @@
             color: #042f2e;
             box-shadow: 0 0 10px var(--primary-glow);
         }
-
-        .import-bar {
-            background: var(--bg-card);
-            border: 2px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 14px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-        }
-        .btn-import {
-            background: var(--primary);
-            color: #042f2e;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .btn-import:hover { opacity: 0.9; }
 
         .kpi-container {
             display: grid;
@@ -346,6 +367,13 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
+    <!-- ZONE DE COPIER-COLLER DIRECT DE LA BASE -->
+    <div class="paste-panel">
+        <h3>📋 Copier-coller direct de votre base Google Sheets</h3>
+        <textarea id="raw-data-input" class="paste-textarea" placeholder="Sélectionnez vos lignes dans Google Sheets (de l'en-tête Agent jusqu'à la dernière ligne), faites Ctrl+C, puis collez (Ctrl+V) ici..."></textarea>
+        <button class="btn-update" onclick="traiterDonneesCollees()">⚡ Mettre à jour le Tableau de Bord</button>
+    </div>
+
     <div class="top-bar">
         <div class="filter-group">
             <span>Période :</span>
@@ -397,17 +425,6 @@
         <button class="month-btn" onclick="filtrerMoisRapide('toutes')">Toutes</button>
     </div>
 
-    <div class="import-bar">
-        <div>
-            <strong style="font-size: 13px; display: block;">📂 Charger l'onglet « Qualité » (PPQ 2026)</strong>
-            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Sélectionnez votre export CSV pour alimenter le tableau de bord</span>
-        </div>
-        <label class="btn-import" style="cursor: pointer;">
-            📁 Importer CSV
-            <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="importerFichier(event)">
-        </label>
-    </div>
-
     <div class="kpi-container">
         <div class="kpi-card">
             <h3>NQ validées</h3>
@@ -423,7 +440,6 @@
         </div>
     </div>
 
-    <!-- TABLEAU DE SUIVI AVEC FORMULES DISTINCTES -->
     <div class="card-section">
         <h2>Suivi par Catégorie & Retards de Production</h2>
         <table>
@@ -439,7 +455,7 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Veuillez importer votre fichier de données CSV ci-dessus...</td></tr>
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Veuillez coller vos données ci-dessus et cliquer sur Mettre à jour...</td></tr>
             </tbody>
         </table>
     </div>
@@ -461,7 +477,7 @@
         <h2>Plan d'Action (3 Niveaux d'Alerte)</h2>
         <div class="alert-row alert-rouge">
             <span>Alerte Rouge (Critique)</span>
-            <span id="alerte-rouge-texte">En attente d'importation de fichier...</span>
+            <span id="alerte-rouge-texte">En attente de données...</span>
         </div>
         <div class="alert-row alert-orange">
             <span>Alerte Orange (Vigilance)</span>
@@ -525,46 +541,42 @@
     </div>
 
     <script>
-        let donneesCSVGlobales = [];
+        let donneesMatriceGlobales = [];
         let moisActif = '10';
-        let idxAgent = 7;
-        let idxSite = 5;
-        let idxDate = 6;
+        let idxAgent = -1;
+        let idxSite = -1;
+        let idxDate = -1;
 
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
-        function parseCSVLine(text) {
-            let result = [], inQuotes = false, current = '';
-            for (let i = 0; i < text.length; i++) {
-                let char = text[i];
-                if (char === '"') inQuotes = !inQuotes;
-                else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-                else current += char;
+        function traiterDonneesCollees() {
+            const texteColle = document.getElementById('raw-data-input').value.trim();
+            if (!texteColle) {
+                alert("Veuillez d'abord coller vos données dans la zone de texte.");
+                return;
             }
-            result.push(current.trim());
-            return result;
-        }
 
-        function importerFichier(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            document.getElementById('import-status').textContent = 'Fichier chargé : ' + file.name;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                donneesCSVGlobales = text.split(/\r\n|\n/).map(l => l.trim()).filter(l => l.length > 0);
-                
-                if (donneesCSVGlobales.length > 0) {
-                    const headers = parseCSVLine(donneesCSVGlobales[0]).map(h => h.toLowerCase().replace(/['"]+/g, ''));
-                    headers.forEach((h, idx) => {
-                        if (h.includes('agent') || h.includes('collaborateur') || h.includes('trigramme')) idxAgent = idx;
-                        if (h.includes('site')) idxSite = idx;
-                        if (h.includes('date') || h.includes('diffusion')) idxDate = idx;
-                    });
-                }
-                rafraichirDashboard();
-            };
-            reader.readAsText(file, 'UTF-8');
+            // Découpage par ligne et par tabulation (standard lors d'un copier-coller depuis Google Sheets)
+            const lignesBrutes = texteColle.split(/\r\n|\n/);
+            donneesMatriceGlobales = lignesBrutes.map(ligne => ligne.split('\t').map(c => c.trim()));
+
+            // Recherche automatique des colonnes clés
+            idxAgent = -1; idxSite = -1; idxDate = -1;
+            for (let r = 0; r < Math.min(3, donneesMatriceGlobales.length); r++) {
+                const headers = donneesMatriceGlobales[r].map(h => String(h).toLowerCase().trim());
+                headers.forEach((h, idx) => {
+                    if ((h.includes('agent') || h.includes('collaborateur') || h.includes('trigramme')) && idxAgent === -1) idxAgent = idx;
+                    if (h.includes('site') && idxSite === -1) idxSite = idx;
+                    if ((h.includes('date') || h.includes('diffusion')) && idxDate === -1) idxDate = idx;
+                });
+            }
+
+            if (idxAgent === -1) idxAgent = 7; // Colonne H par défaut
+            if (idxSite === -1) idxSite = 5;   // Colonne F par défaut
+            if (idxDate === -1) idxDate = 6;   // Colonne G par défaut
+
+            rafraichirDashboard();
+            alert("Mise à jour réussie ! Le tableau de bord a été actualisé.");
         }
 
         function filtrerMoisRapide(mois) {
@@ -581,14 +593,12 @@
         }
 
         function rafraichirDashboard() {
-            if (donneesCSVGlobales.length <= 1) return;
+            if (donneesMatriceGlobales.length <= 1) return;
 
             const siteFiltre = document.getElementById('filter-site').value.toUpperCase();
             const agentFiltre = document.getElementById('filter-agent').value;
 
             let agentsSet = new Set();
-            
-            // Catégories avec leurs objectifs précis
             let statsCategories = {
                 'MAUVAISE': { ok: 0, cont: 0, vide: 0, objectif: 0.18 },
                 'LOUPÉ RÉDACTION': { ok: 0, cont: 0, vide: 0, objectif: 0.008 },
@@ -599,39 +609,40 @@
             let agentsCount = {};
             let totalNQ = 0, debriefsRealises = 0, nonDebriefs = 0;
             let countTana = 0, countDiego = 0;
-            let totalProductionLignes = 0; // Volume global
+            let totalProductionLignes = 0;
 
-            for (let i = 1; i < donneesCSVGlobales.length; i++) {
-                const cols = parseCSVLine(donneesCSVGlobales[i]).map(c => c.replace(/^"|"$/g, '').trim());
-                if (cols.length < 5) continue;
+            for (let i = 1; i < donneesMatriceGlobales.length; i++) {
+                const cols = donneesMatriceGlobales[i];
+                if (!cols || cols.length < 5) continue;
 
                 totalProductionLignes++;
 
-                const site = (cols[idxSite] || '').toUpperCase();         
-                const dateDiffusion = cols[idxDate] || '';                
-                const agent = cols[idxAgent] || '';                 
-                const mauvaiseVal = cols[10] || '';                 
-                const loupeVal = cols[11] || '';                    
-                const ncVal = cols[12] || '';                       
-                const validationP = (cols[15] || '').toUpperCase(); 
+                const site = String(cols[idxSite] || '').toUpperCase();         
+                const dateDiffusion = String(cols[idxDate] || '');                
+                const agent = String(cols[idxAgent] || '').trim();                 
+                const mauvaiseVal = String(cols[10] || '');                 
+                const loupeVal = String(cols[11] || '');                    
+                const ncVal = String(cols[12] || '');                       
+                const validationP = String(cols[15] || '').toUpperCase(); 
 
-                if (!agent || agent === 'TRIGRAMME' || agent === 'Collaborateur (Agent)' || agent.startsWith('S0')) continue;
+                if (!agent || agent === 'TRIGRAMME' || agent === 'Collaborateur (Agent)' || agent.startsWith('S0') || agent.toLowerCase() === 'agent') continue;
                 agentsSet.add(agent);
 
                 let debriefVal = '';
                 for (let idx = 14; idx < cols.length; idx++) {
-                    let val = (cols[idx] || '').toUpperCase();
+                    let val = String(cols[idx] || '').toUpperCase();
                     if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
                         debriefVal = val; break;
                     }
                 }
 
                 let moisLigne = '';
-                if (dateDiffusion.includes('/')) {
-                    const p = dateDiffusion.split('/');
+                let dateStr = String(dateDiffusion);
+                if (dateStr.includes('/')) {
+                    const p = dateStr.split('/');
                     if (p.length >= 2) moisLigne = p[1].padStart(2, '0');
-                } else if (dateDiffusion.includes('-')) {
-                    const p = dateDiffusion.split('-');
+                } else if (dateStr.includes('-')) {
+                    const p = dateStr.split('-');
                     if (p.length >= 2) moisLigne = p[1].padStart(2, '0');
                 }
 
@@ -675,7 +686,7 @@
 
             const selectAgent = document.getElementById('filter-agent');
             const agentActuel = selectAgent.value;
-            selectAgent.innerHTML = '<option value="tous">Tous</option>';
+            selectAgent.innerHTML = '<option value="tous">Tous les agents</option>';
             Array.from(agentsSet).sort().forEach(ag => {
                 let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
                 if (ag === agentActuel) opt.selected = true;
@@ -686,27 +697,20 @@
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Application des formules de calcul distinctes par catégorie
             let tableCatHtml = '';
             let index = 1;
-            let rmEnvoyes = totalProductionLignes > 0 ? totalProductionLignes : 1; 
-            let alertesTraittees = totalProductionLignes > 0 ? totalProductionLignes : 1;
-            let volumeHoraire = totalProductionLignes > 0 ? totalProductionLignes : 1;
+            let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
 
             for (let [cat, data] of Object.entries(statsCategories)) {
                 let totalCat = data.ok + data.cont + data.vide;
                 let tauxReelNum = 0;
 
-                // Application de la formule spécifique selon la catégorie
                 if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
-                    // (Nb de cas / RMs envoyés) * 100
-                    tauxReelNum = (totalCat / rmEnvoyes) * 100;
+                    tauxReelNum = (totalCat / baseProd) * 100;
                 } else if (cat === 'LOUPÉ RÉDACTION') {
-                    // (Nb de cas / Alertes traitées) * 10
-                    tauxReelNum = (totalCat / alertesTraittees) * 10;
+                    tauxReelNum = (totalCat / baseProd) * 10;
                 } else if (cat === 'LOUPÉ VISUEL / CQTV') {
-                    // (Nb de cas / Volume horaire) * 100
-                    tauxReelNum = (totalCat / volumeHoraire) * 100;
+                    tauxReelNum = (totalCat / baseProd) * 100;
                 }
 
                 let tauxReelStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
