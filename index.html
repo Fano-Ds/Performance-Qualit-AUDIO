@@ -144,6 +144,49 @@
             white-space: nowrap;
         }
 
+        /* BARRE D'IMPORT DE FICHIER / DONNÉES */
+        .import-bar {
+            background: var(--bg-card);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .import-bar label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .import-bar input[type="file"] {
+            display: none;
+        }
+
+        .btn-import {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-import:hover {
+            opacity: 0.9;
+        }
+
         .filters-bar {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -289,6 +332,7 @@
 </head>
 <body>
 
+    <!-- HEADER -->
     <header>
         <div class="header-content">
             <h1>QUALITY PERFORMANCE CENTER <span>— AUDIO</span></h1>
@@ -302,9 +346,22 @@
         <div class="header-slogan">« Mesurer la qualité. Comprendre les écarts. Piloter la performance. »</div>
     </header>
 
+    <!-- ZONE D'IMPORT DIRECT DE FICHIER -->
+    <div class="import-bar">
+        <div>
+            <strong style="font-size: 13px; display: block; margin-bottom: 2px;">📂 Alimentation des données</strong>
+            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Glissez votre fichier CSV ici ou sélectionnez-le pour mettre à jour le dashboard</span>
+        </div>
+        <label class="btn-import">
+            📁 Choisir un fichier CSV
+            <input type="file" id="csv-file-input" accept=".csv" onchange="importerFichierLocal(event)">
+        </label>
+    </div>
+
+    <!-- FILTERS BAR -->
     <div class="filters-bar">
         <div class="filter-group">
-            <select id="filter-periode" onchange="rafraichirTableauDeBord()">
+            <select id="filter-periode" onchange="traiterDonneesCSV()">
                 <option value="toutes">Période : Toutes</option>
                 <option value="janvier">Janvier</option>
                 <option value="février">Février</option>
@@ -321,19 +378,20 @@
             </select>
         </div>
         <div class="filter-group">
-            <select id="filter-site" onchange="rafraichirTableauDeBord()">
+            <select id="filter-site" onchange="traiterDonneesCSV()">
                 <option value="tous">Site : Tous</option>
                 <option value="TANA">TANA</option>
                 <option value="DIEGO">DIEGO</option>
             </select>
         </div>
         <div class="filter-group">
-            <select id="filter-agent" onchange="rafraichirTableauDeBord()">
+            <select id="filter-agent" onchange="traiterDonneesCSV()">
                 <option value="tous">Agent : Tous les agents</option>
             </select>
         </div>
     </div>
 
+    <!-- KPI CARDS -->
     <div class="kpi-container">
         <div class="kpi-card">
             <h3>NQ Validées (Cumul)</h3>
@@ -352,6 +410,7 @@
         </div>
     </div>
 
+    <!-- SECTION CATÉGORIES & PLAN D'ACTION -->
     <div class="grid-2col">
         <div class="card-section">
             <h2>Suivi par Type de Non-Qualité</h2>
@@ -363,7 +422,7 @@
                     </tr>
                 </thead>
                 <tbody id="table-categories">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Chargement...</td></tr>
+                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Veuillez importer votre fichier de données...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -371,11 +430,12 @@
         <div class="card-section">
             <h2>Synthèse & Plan d'Action</h2>
             <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="color: var(--text-muted);">Analyse en cours...</div>
+                <div style="color: var(--text-muted);">En attente de chargement d'un fichier...</div>
             </div>
         </div>
     </div>
 
+    <!-- AGENTS À SUIVRE & NQ PAR SITE -->
     <div class="grid-2col">
         <div class="card-section">
             <h2>Agents à accompagner (Flop NQ)</h2>
@@ -388,7 +448,7 @@
                     </tr>
                 </thead>
                 <tbody id="agents-table-body">
-                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Chargement...</td></tr>
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">En attente...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -407,8 +467,7 @@
     </div>
 
     <script>
-        // Remplacez l'URL ci-dessous par le lien CSV publié depuis Fichier > Partager > Publier sur le web
-        const csvUrl = 'METTRE_ICI_VOTRE_LIEN_CSV_PUBLIE_SUR_LE_WEB';
+        let donneesBrutesCSV = [];
 
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
@@ -439,120 +498,125 @@
             return result;
         }
 
-        async function rafraichirTableauDeBord() {
-            try {
-                const response = await fetch(csvUrl);
-                const data = await response.text();
-                const lignes = data.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                if (lignes.length <= 1) return;
+        function importerFichierLocal(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-                const moisSelectionne = document.getElementById('filter-periode').value.toLowerCase();
-                const siteSelectionne = document.getElementById('filter-site').value.toUpperCase();
-                const agentSelectionne = document.getElementById('filter-agent').value;
-
-                let agentsSet = new Set(), donneesFiltrees = [];
-
-                for (let i = 1; i < lignes.length; i++) {
-                    const cols = parseCSVLine(lignes[i]).map(c => c.replace(/"/g, '').trim());
-                    if (cols.length < 8) continue;
-
-                    const dateDiffusion = cols[6] || ''; // Col G
-                    const site = (cols[5] || '').toUpperCase(); // Col F
-                    const agent = cols[7] || 'Inconnu'; // Col H
-
-                    const mauvaiseVal = cols[10] || ''; // Col K
-                    const loupeVal = cols[11] || '';    // Col L
-                    const ncVal = cols[12] || '';       // Col M
-                    const validationP = (cols[15] || '').toUpperCase(); // Col P
-
-                    let debriefVal = '';
-                    for (let idx = 14; idx < cols.length; idx++) {
-                        let val = cols[idx].toUpperCase();
-                        if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
-                            debriefVal = val; break;
-                        }
-                    }
-
-                    if (agent && agent !== 'Inconnu') agentsSet.add(agent);
-
-                    let moisLigne = '';
-                    const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-                    for (let m of moisNoms) {
-                        if (dateDiffusion.toLowerCase().includes(m)) { moisLigne = m; break; }
-                    }
-
-                    if (validationP.includes('N') && !validationP.includes('NON')) continue;
-
-                    let typeNQ = '';
-                    if (mauvaiseVal !== '' && !mauvaiseVal.toLowerCase().includes('rien')) typeNQ = 'MAUVAISE';
-                    else if (loupeVal !== '' && !loupeVal.toLowerCase().includes('rien')) {
-                        if (loupeVal.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL';
-                        else if (loupeVal.toLowerCase().includes('redact')) typeNQ = 'LOUPÉ RÉDACTION';
-                        else typeNQ = 'LOUPÉ';
-                    } else if (ncVal !== '' && !ncVal.toLowerCase().includes('rien')) typeNQ = 'NON CONFORME';
-                    else continue;
-
-                    let matchMois = (moisSelectionne === 'toutes' || moisLigne === moisSelectionne);
-                    let matchSite = (siteSelectionne === 'TOUS' || site.includes(siteSelectionne));
-                    let matchAgent = (agentSelectionne === 'tous' || agent === agentSelectionne);
-
-                    if (matchMois && matchSite && matchAgent) donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
-                }
-
-                const selectAgent = document.getElementById('filter-agent');
-                if (selectAgent.options.length <= 1) {
-                    Array.from(agentsSet).sort().forEach(ag => {
-                        let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
-                        selectAgent.appendChild(opt);
-                    });
-                }
-
-                let totalNQ = donneesFiltrees.length, debriefsRealises = 0, nonDebriefs = 0;
-                let categoriesCount = {}, agentsCount = {}, countTana = 0, countDiego = 0;
-
-                donneesFiltrees.forEach(row => {
-                    if (row.debrief.includes('O') || row.debrief.includes('OUI')) debriefsRealises++;
-                    else nonDebriefs++;
-
-                    categoriesCount[row.typeNQ] = (categoriesCount[row.typeNQ] || 0) + 1;
-                    agentsCount[row.agent] = (agentsCount[row.agent] || 0) + 1;
-
-                    if (row.site.includes('TANA')) countTana++;
-                    if (row.site.includes('DIEGO')) countDiego++;
-                });
-
-                document.getElementById('kpi-nq').textContent = totalNQ;
-                document.getElementById('kpi-debrief').textContent = debriefsRealises;
-                document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
-
-                let catHtml = '';
-                for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
-                    catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
-                }
-                document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
-
-                let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
-                let agentHtml = '';
-                for (let [ag, cnt] of sortedAgents) {
-                    let badgeClass = cnt >= 5 ? 'status-depasse' : 'status-surveiller';
-                    let badgeText = cnt >= 5 ? 'Critique' : 'À surveiller';
-                    agentHtml += `<tr><td><strong>${ag}</strong></td><td><strong>${cnt}</strong></td><td><span class="status-badge ${badgeClass}">${badgeText}</span></td></tr>`;
-                }
-                document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
-
-                document.getElementById('stat-tana').textContent = countTana + ' NQ';
-                document.getElementById('bar-tana').style.width = (totalNQ > 0 ? (countTana / totalNQ) * 100 : 0) + '%';
-                document.getElementById('stat-diego').textContent = countDiego + ' NQ';
-                document.getElementById('bar-diego').style.width = (totalNQ > 0 ? (countDiego / totalNQ) * 100 : 0) + '%';
-
-                document.getElementById('pa-container').innerHTML = `<div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;"><strong>Synthèse :</strong> ${totalNQ} erreur(s) comptabilisée(s). ${nonDebriefs} en attente de débriefing.</div>`;
-
-            } catch (err) {
-                console.error("Erreur :", err);
-            }
+            document.getElementById('import-status').textContent = 'Fichier chargé : ' + file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                donneesBrutesCSV = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                traiterDonneesCSV();
+            };
+            reader.readAsText(file, 'UTF-8');
         }
 
-        rafraichirTableauDeBord();
+        function traiterDonneesCSV() {
+            if (donneesBrutesCSV.length <= 1) return;
+
+            const moisSelectionne = document.getElementById('filter-periode').value.toLowerCase();
+            const siteSelectionne = document.getElementById('filter-site').value.toUpperCase();
+            const agentSelectionne = document.getElementById('filter-agent').value;
+
+            let agentsSet = new Set(), donneesFiltrees = [];
+
+            for (let i = 1; i < donneesBrutesCSV.length; i++) {
+                const cols = parseCSVLine(donneesBrutesCSV[i]).map(c => c.replace(/"/g, '').trim());
+                if (cols.length < 8) continue;
+
+                const dateDiffusion = cols[6] || ''; // Col G
+                const site = (cols[5] || '').toUpperCase(); // Col F
+                const agent = cols[7] || 'Inconnu'; // Col H
+
+                const mauvaiseVal = cols[10] || ''; // Col K
+                const loupeVal = cols[11] || '';    // Col L
+                const ncVal = cols[12] || '';       // Col M
+                const validationP = (cols[15] || '').toUpperCase(); // Col P
+
+                let debriefVal = '';
+                for (let idx = 14; idx < cols.length; idx++) {
+                    let val = cols[idx].toUpperCase();
+                    if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
+                        debriefVal = val; break;
+                    }
+                }
+
+                if (agent && agent !== 'Inconnu') agentsSet.add(agent);
+
+                let moisLigne = '';
+                const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+                for (let m of moisNoms) {
+                    if (dateDiffusion.toLowerCase().includes(m)) { moisLigne = m; break; }
+                }
+
+                if (validationP.includes('N') && !validationP.includes('NON')) continue; // Exclure KO
+
+                let typeNQ = '';
+                if (mauvaiseVal !== '' && !mauvaiseVal.toLowerCase().includes('rien')) typeNQ = 'MAUVAISE';
+                else if (loupeVal !== '' && !loupeVal.toLowerCase().includes('rien')) {
+                    if (loupeVal.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL';
+                    else if (loupeVal.toLowerCase().includes('redact')) typeNQ = 'LOUPÉ RÉDACTION';
+                    else typeNQ = 'LOUPÉ';
+                } else if (ncVal !== '' && !ncVal.toLowerCase().includes('rien')) typeNQ = 'NON CONFORME';
+                else continue;
+
+                let matchMois = (moisSelectionne === 'toutes' || moisLigne === moisSelectionne);
+                let matchSite = (siteSelectionne === 'TOUS' || site.includes(siteSelectionne));
+                let matchAgent = (agentSelectionne === 'tous' || agent === agentSelectionne);
+
+                if (matchMois && matchSite && matchAgent) donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
+            }
+
+            const selectAgent = document.getElementById('filter-agent');
+            const agentActuel = selectAgent.value;
+            selectAgent.innerHTML = '<option value="tous">Agent : Tous les agents</option>';
+            Array.from(agentsSet).sort().forEach(ag => {
+                let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
+                if (ag === agentActuel) opt.selected = true;
+                selectAgent.appendChild(opt);
+            });
+
+            let totalNQ = donneesFiltrees.length, debriefsRealises = 0, nonDebriefs = 0;
+            let categoriesCount = {}, agentsCount = {}, countTana = 0, countDiego = 0;
+
+            donneesFiltrees.forEach(row => {
+                if (row.debrief.includes('O') || row.debrief.includes('OUI')) debriefsRealises++;
+                else nonDebriefs++;
+
+                categoriesCount[row.typeNQ] = (categoriesCount[row.typeNQ] || 0) + 1;
+                agentsCount[row.agent] = (agentsCount[row.agent] || 0) + 1;
+
+                if (row.site.includes('TANA')) countTana++;
+                if (row.site.includes('DIEGO')) countDiego++;
+            });
+
+            document.getElementById('kpi-nq').textContent = totalNQ;
+            document.getElementById('kpi-debrief').textContent = debriefsRealises;
+            document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
+
+            let catHtml = '';
+            for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
+                catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
+            }
+            document.getElementById('table-categories').innerHTML = catHtml || `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette sélection</td></tr>`;
+
+            let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            let agentHtml = '';
+            for (let [ag, cnt] of sortedAgents) {
+                let badgeClass = cnt >= 5 ? 'status-depasse' : 'status-surveiller';
+                let badgeText = cnt >= 5 ? 'Critique' : 'À surveiller';
+                agentHtml += `<tr><td><strong>${ag}</strong></td><td><strong>${cnt}</strong></td><td><span class="status-badge ${badgeClass}">${badgeText}</span></td></tr>`;
+            }
+            document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
+
+            document.getElementById('stat-tana').textContent = countTana + ' NQ';
+            document.getElementById('bar-tana').style.width = (totalNQ > 0 ? (countTana / totalNQ) * 100 : 0) + '%';
+            document.getElementById('stat-diego').textContent = countDiego + ' NQ';
+            document.getElementById('bar-diego').style.width = (totalNQ > 0 ? (countDiego / totalNQ) * 100 : 0) + '%';
+
+            document.getElementById('pa-container').innerHTML = `<div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;"><strong>Synthèse :</strong> ${totalNQ} erreur(s) comptabilisée(s). ${nonDebriefs} en attente de débriefing.</div>`;
+        }
     </script>
 </body>
 </html>
