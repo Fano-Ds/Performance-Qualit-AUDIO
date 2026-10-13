@@ -33,7 +33,6 @@
             padding: 20px;
         }
 
-        /* HEADER OFFICIEL AVEC LOGO */
         header {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 1px solid #334155;
@@ -112,7 +111,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* BARRE SUPÉRIEURE : PÉRIODE, SITE, AGENT ET BOUTONS MOIS */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -169,7 +167,6 @@
             box-shadow: 0 0 10px var(--primary-glow);
         }
 
-        /* ZONE D'IMPORT FICHIER */
         .import-bar {
             background: var(--bg-card);
             border: 2px dashed var(--border-color);
@@ -193,7 +190,6 @@
         }
         .btn-import:hover { opacity: 0.9; }
 
-        /* KPI CONTAINER */
         .kpi-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -224,22 +220,8 @@
             font-size: 26px;
             font-weight: 800;
             color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
-        .kpi-legend {
-            position: absolute;
-            top: 16px;
-            right: 20px;
-            text-align: right;
-            font-size: 10px;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-
-        /* SECTIONS & TABLEAUX */
         .card-section {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -289,7 +271,6 @@
             border-left: 4px solid var(--danger);
         }
 
-        /* STATUTS & BADGES */
         .status-badge {
             padding: 4px 10px;
             border-radius: 6px;
@@ -301,7 +282,6 @@
         .badge-alerte { background: #7f1d1d; color: #fca5a5; }
         .badge-vigilance { background: #78350f; color: #fde68a; }
 
-        /* PLAN D'ACTION (3 NIVEAUX) */
         .alert-row {
             display: flex;
             align-items: center;
@@ -316,14 +296,12 @@
         .alert-orange { background: rgba(251, 191, 36, 0.15); border: 1px solid var(--warning); color: #fde68a; }
         .alert-verte { background: rgba(52, 211, 153, 0.15); border: 1px solid var(--success); color: #6ee7b7; }
 
-        /* GRAPHIQUES SVG DE RÉFÉRENCE */
         .chart-box {
             width: 100%;
             height: 90px;
             margin-top: 10px;
         }
 
-        /* GRILLES INFÉRIEURES */
         .grid-3col {
             display: grid;
             grid-template-columns: 1.5fr 2fr 1.5fr;
@@ -359,7 +337,6 @@
 </head>
 <body>
 
-    <!-- HEADER OFFICIEL -->
     <header>
         <div class="header-content">
             <h1>QUALITY PERFORMANCE CENTER <span>— AUDIO</span></h1>
@@ -369,7 +346,6 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
-    <!-- BARRE SUPÉRIEURE DE FILTRAGE -->
     <div class="top-bar">
         <div class="filter-group">
             <span>Période :</span>
@@ -405,7 +381,6 @@
         </div>
     </div>
 
-    <!-- BOUTONS DE SÉLECTION RAPIDE DES MOIS -->
     <div class="months-container">
         <button class="month-btn" onclick="filtrerMoisRapide('01')">Janvier</button>
         <button class="month-btn" onclick="filtrerMoisRapide('02')">Février</button>
@@ -422,7 +397,6 @@
         <button class="month-btn" onclick="filtrerMoisRapide('toutes')">Toutes</button>
     </div>
 
-    <!-- ZONE D'IMPORT DU FICHIER CSV -->
     <div class="import-bar">
         <div>
             <strong style="font-size: 13px; display: block;">📂 Charger l'onglet « Qualité » (PPQ 2026)</strong>
@@ -434,13 +408,8 @@
         </label>
     </div>
 
-    <!-- CARTES KPI -->
     <div class="kpi-container">
         <div class="kpi-card">
-            <div class="kpi-legend">
-                <span style="color:var(--primary)">● Target met</span><br>
-                <span style="color:var(--danger)">● Below target</span>
-            </div>
             <h3>NQ validées</h3>
             <div class="value" id="kpi-nq">0</div>
         </div>
@@ -454,7 +423,7 @@
         </div>
     </div>
 
-    <!-- SUIVI PAR CATÉGORIE (4 CATÉGORIES AUDIO) -->
+    <!-- TABLEAU DE SUIVI AVEC FORMULES DISTINCTES -->
     <div class="card-section">
         <h2>Suivi par Catégorie & Retards de Production</h2>
         <table>
@@ -475,15 +444,8 @@
         </table>
     </div>
 
-    <!-- ÉVOLUTION MENSUELLE PAR CATÉGORIE -->
     <div class="card-section">
         <h2>Évolution mensuelle par catégorie & Lignes d'objectifs</h2>
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 5px;">
-            <span style="color:var(--primary);">■ Catégorie</span> &nbsp;&nbsp; 
-            <span style="color:var(--warning);">■ Vides</span> &nbsp;&nbsp; 
-            <span style="color:var(--danger);">■ Conform</span> &nbsp;&nbsp; 
-            <span style="color:#60a5fa;">--- Objectifs</span>
-        </div>
         <svg class="chart-box" viewBox="0 0 800 100" preserveAspectRatio="none">
             <polyline fill="none" stroke="#2dd4bf" stroke-width="2.5" points="0,70 100,50 200,60 300,40 400,45 500,30 600,35 700,20 800,25" />
             <polyline fill="none" stroke="#fbbf24" stroke-width="2" points="0,85 100,80 200,82 300,75 400,78 500,70 600,72 700,65 800,68" />
@@ -495,7 +457,6 @@
         </div>
     </div>
 
-    <!-- PLAN D'ACTION (3 NIVEAUX D'ALERTE) -->
     <div class="card-section">
         <h2>Plan d'Action (3 Niveaux d'Alerte)</h2>
         <div class="alert-row alert-rouge">
@@ -504,28 +465,22 @@
         </div>
         <div class="alert-row alert-orange">
             <span>Alerte Orange (Vigilance)</span>
-            <span id="alerte-orange-texte">Aucun avertissement de vigilance requis pour l'instant.</span>
+            <span id="alerte-orange-texte">Aucun avertissement de vigilance requis.</span>
         </div>
         <div class="alert-row alert-verte">
             <span>Alerte Verte (Tenu)</span>
-            <span id="alerte-verte-texte">Objectifs de qualité globalement respectés sur les flux Audio.</span>
+            <span id="alerte-verte-texte">Objectifs de qualité globalement respectés.</span>
         </div>
     </div>
 
-    <!-- GRANDS BLOCS INFÉRIEURS -->
     <div class="grid-3col">
-        <!-- ÉVOLUTION NQ GLOBAL -->
         <div class="card-section" style="margin-bottom:0;">
             <h2>Évolution NQ Global (Par mois)</h2>
             <svg class="chart-box" viewBox="0 0 400 90" preserveAspectRatio="none">
                 <polyline fill="none" stroke="#2dd4bf" stroke-width="3" points="0,60 50,45 100,55 150,35 200,40 250,25 300,30 350,15 400,20" />
             </svg>
-            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-top:5px;">
-                <span>Jan</span><span>Mar</span><span>Mai</span><span>Juil</span><span>Sep</span><span>Nov</span>
-            </div>
         </div>
 
-        <!-- AVANCEMENT DES DÉBRIEFINGS -->
         <div class="card-section" style="margin-bottom:0;">
             <h2>Avancement des débriefings</h2>
             <div class="progress-item">
@@ -534,21 +489,8 @@
                 </div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-debrief-global" style="width: 0%;"></div></div>
             </div>
-            <div class="progress-item">
-                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;">
-                    <span>Taux Mauvaise</span><span id="pct-mauv">0%</span>
-                </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-mauv" style="width: 0%;"></div></div>
-            </div>
-            <div class="progress-item">
-                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;">
-                    <span>Taux Loupé Rédaction</span><span id="pct-loupe">0%</span>
-                </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-loupe" style="width: 0%;"></div></div>
-            </div>
         </div>
 
-        <!-- AGENTS À ACCOMPAGNER -->
         <div class="card-section" style="margin-bottom:0;">
             <h2>Agents à accompagner — Flop NQ</h2>
             <table>
@@ -566,27 +508,28 @@
         </div>
     </div>
 
-    <!-- BLOC NQ PAR SITE EN BAS -->
-    <div class="card-section">
+    <div class="card-section" style="margin-top:20px;">
         <h2>NQ par site (Mois sélectionné)</h2>
         <div class="site-stats-container">
             <div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--text-muted);">TANA</div>
                 <div style="font-size: 22px; font-weight: 800; color: var(--primary); margin: 5px 0;" id="tana-val">0 NQ</div>
-                <div style="font-size: 11px; color: var(--text-muted);" id="tana-pct">Part : 0% | Taux Réel : 0,00%</div>
+                <div style="font-size: 11px; color: var(--text-muted);" id="tana-pct">Part : 0%</div>
             </div>
             <div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--text-muted);">DIEGO</div>
                 <div style="font-size: 22px; font-weight: 800; color: var(--danger); margin: 5px 0;" id="diego-val">0 NQ</div>
-                <div style="font-size: 11px; color: var(--text-muted);" id="diego-pct">Part : 0% | Taux Réel : 0,00%</div>
+                <div style="font-size: 11px; color: var(--text-muted);" id="diego-pct">Part : 0%</div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT DE TRAITEMENT DES DONNÉES -->
     <script>
         let donneesCSVGlobales = [];
         let moisActif = '10';
+        let idxAgent = 7;
+        let idxSite = 5;
+        let idxDate = 6;
 
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
@@ -610,6 +553,15 @@
             reader.onload = function(e) {
                 const text = e.target.result;
                 donneesCSVGlobales = text.split(/\r\n|\n/).map(l => l.trim()).filter(l => l.length > 0);
+                
+                if (donneesCSVGlobales.length > 0) {
+                    const headers = parseCSVLine(donneesCSVGlobales[0]).map(h => h.toLowerCase().replace(/['"]+/g, ''));
+                    headers.forEach((h, idx) => {
+                        if (h.includes('agent') || h.includes('collaborateur') || h.includes('trigramme')) idxAgent = idx;
+                        if (h.includes('site')) idxSite = idx;
+                        if (h.includes('date') || h.includes('diffusion')) idxDate = idx;
+                    });
+                }
                 rafraichirDashboard();
             };
             reader.readAsText(file, 'UTF-8');
@@ -636,30 +588,35 @@
 
             let agentsSet = new Set();
             
-            // Initialisation stricte des 4 catégories Audio
+            // Catégories avec leurs objectifs précis
             let statsCategories = {
-                'MAUVAISE': { ok: 0, cont: 0, vide: 0 },
-                'LOUPÉ RÉDACTION': { ok: 0, cont: 0, vide: 0 },
-                'NON CONFORME': { ok: 0, cont: 0, vide: 0 },
-                'LOUPÉ VISUEL / CQTV': { ok: 0, cont: 0, vide: 0 }
+                'MAUVAISE': { ok: 0, cont: 0, vide: 0, objectif: 0.18 },
+                'LOUPÉ RÉDACTION': { ok: 0, cont: 0, vide: 0, objectif: 0.008 },
+                'NON CONFORME': { ok: 0, cont: 0, vide: 0, objectif: 0.07 },
+                'LOUPÉ VISUEL / CQTV': { ok: 0, cont: 0, vide: 0, objectif: 1.40 }
             };
 
             let agentsCount = {};
             let totalNQ = 0, debriefsRealises = 0, nonDebriefs = 0;
             let countTana = 0, countDiego = 0;
-            let countMauv = 0, countLoupe = 0;
+            let totalProductionLignes = 0; // Volume global
 
             for (let i = 1; i < donneesCSVGlobales.length; i++) {
                 const cols = parseCSVLine(donneesCSVGlobales[i]).map(c => c.replace(/^"|"$/g, '').trim());
-                if (cols.length < 8) continue;
+                if (cols.length < 5) continue;
 
-                const site = (cols[5] || '').toUpperCase();         // Col F : Site
-                const dateDiffusion = cols[6] || '';                // Col G : Date
-                const agent = cols[7] || 'Inconnu';                 // Col H : Agent
-                const mauvaiseVal = cols[10] || '';                 // Col K : Mauvaise
-                const loupeVal = cols[11] || '';                    // Col L : Loupé
-                const ncVal = cols[12] || '';                       // Col M : Non Conforme
-                const validationP = (cols[15] || '').toUpperCase(); // Col P : Statut
+                totalProductionLignes++;
+
+                const site = (cols[idxSite] || '').toUpperCase();         
+                const dateDiffusion = cols[idxDate] || '';                
+                const agent = cols[idxAgent] || '';                 
+                const mauvaiseVal = cols[10] || '';                 
+                const loupeVal = cols[11] || '';                    
+                const ncVal = cols[12] || '';                       
+                const validationP = (cols[15] || '').toUpperCase(); 
+
+                if (!agent || agent === 'TRIGRAMME' || agent === 'Collaborateur (Agent)' || agent.startsWith('S0')) continue;
+                agentsSet.add(agent);
 
                 let debriefVal = '';
                 for (let idx = 14; idx < cols.length; idx++) {
@@ -667,10 +624,6 @@
                     if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
                         debriefVal = val; break;
                     }
-                }
-
-                if (agent && agent !== 'Inconnu' && agent !== 'TRIGRAMME' && agent !== 'Collaborateur (Agent)' && !agent.startsWith('S0')) {
-                    agentsSet.add(agent);
                 }
 
                 let moisLigne = '';
@@ -693,13 +646,11 @@
 
                 if (mauvaiseVal !== '' && !/rien/i.test(mauvaiseVal)) {
                     typeNQ = 'MAUVAISE';
-                    countMauv++;
                 } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
                     if (loupeLower.includes('visuel') || loupeLower.includes('cqtv')) {
                         typeNQ = 'LOUPÉ VISUEL / CQTV';
                     } else {
                         typeNQ = 'LOUPÉ RÉDACTION';
-                        countLoupe++;
                     }
                 } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
                     typeNQ = 'NON CONFORME';
@@ -711,7 +662,7 @@
                 if (debriefVal.includes('O') || debriefVal.includes('OUI')) debriefsRealises++;
                 else nonDebriefs++;
 
-                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { ok: 0, cont: 0, vide: 0 };
+                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { ok: 0, cont: 0, vide: 0, objectif: 0.10 };
                 
                 if (validationP.includes('OK')) statsCategories[typeNQ].ok++;
                 else if (validationP.includes('CONTESTATION') || validationP.includes('CONTESTÉ')) statsCategories[typeNQ].cont++;
@@ -722,7 +673,6 @@
                 if (site.includes('DIEGO')) countDiego++;
             }
 
-            // Mise à jour de la liste des agents
             const selectAgent = document.getElementById('filter-agent');
             const agentActuel = selectAgent.value;
             selectAgent.innerHTML = '<option value="tous">Tous</option>';
@@ -732,46 +682,63 @@
                 selectAgent.appendChild(opt);
             });
 
-            // Affichage KPI
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage du tableau des 4 catégories
+            // Application des formules de calcul distinctes par catégorie
             let tableCatHtml = '';
             let index = 1;
+            let rmEnvoyes = totalProductionLignes > 0 ? totalProductionLignes : 1; 
+            let alertesTraittees = totalProductionLignes > 0 ? totalProductionLignes : 1;
+            let volumeHoraire = totalProductionLignes > 0 ? totalProductionLignes : 1;
+
             for (let [cat, data] of Object.entries(statsCategories)) {
                 let totalCat = data.ok + data.cont + data.vide;
-                let tauxReel = totalNQ > 0 ? ((totalCat / totalNQ) * 100).toFixed(2) + '%' : '0,00%';
-                let isNC = cat === 'NON CONFORME';
-                let rowClass = isNC ? 'row-highlight' : '';
-                let badgeHtml = isNC ? '<span class="status-badge badge-alerte">Alerte</span>' : '<span class="status-badge badge-tenu">Tenu</span>';
+                let tauxReelNum = 0;
+
+                // Application de la formule spécifique selon la catégorie
+                if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
+                    // (Nb de cas / RMs envoyés) * 100
+                    tauxReelNum = (totalCat / rmEnvoyes) * 100;
+                } else if (cat === 'LOUPÉ RÉDACTION') {
+                    // (Nb de cas / Alertes traitées) * 10
+                    tauxReelNum = (totalCat / alertesTraittees) * 10;
+                } else if (cat === 'LOUPÉ VISUEL / CQTV') {
+                    // (Nb de cas / Volume horaire) * 100
+                    tauxReelNum = (totalCat / volumeHoraire) * 100;
+                }
+
+                let tauxReelStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
+                let objStr = data.objectif.toFixed(3).replace('.', ',') + ' %';
+
+                let statutHtml = '';
+                let rowClass = '';
+                if (tauxReelNum <= data.objectif) {
+                    statutHtml = '<span class="status-badge badge-tenu">Tenu</span>';
+                } else if (tauxReelNum <= data.objectif * 1.5) {
+                    statutHtml = '<span class="status-badge badge-vigilance">Vigilance</span>';
+                } else {
+                    statutHtml = '<span class="status-badge badge-alerte">Alerte</span>';
+                    rowClass = 'row-highlight';
+                }
 
                 tableCatHtml += `<tr class="${rowClass}">
                     <td><strong>${index++}. ${cat}</strong></td>
                     <td>${data.ok}</td>
                     <td>${data.cont}</td>
                     <td>${data.vide}</td>
-                    <td>Obj. 0,10%</td>
-                    <td><strong>${tauxReel}</strong></td>
-                    <td>${badgeHtml}</td>
+                    <td>Obj. ${objStr}</td>
+                    <td><strong>${tauxReelStr}</strong></td>
+                    <td>${statutHtml}</td>
                 </tr>`;
             }
             document.getElementById('table-categories').innerHTML = tableCatHtml;
 
-            // Avancement débriefings et barres
             let pctDebrief = totalNQ > 0 ? Math.round((debriefsRealises / totalNQ) * 100) : 0;
-            let pctMauv = totalNQ > 0 ? Math.round((countMauv / totalNQ) * 100) : 0;
-            let pctLoupe = totalNQ > 0 ? Math.round((countLoupe / totalNQ) * 100) : 0;
-
             document.getElementById('pct-debrief-val').textContent = pctDebrief + '%';
             document.getElementById('bar-debrief-global').style.width = pctDebrief + '%';
-            document.getElementById('bar-mauv').style.width = pctMauv + '%';
-            document.getElementById('pct-mauv').textContent = pctMauv + '%';
-            document.getElementById('bar-loupe').style.width = pctLoupe + '%';
-            document.getElementById('pct-loupe').textContent = pctLoupe + '%';
 
-            // Top agents
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
             for (let [ag, cnt] of sortedAgents) {
@@ -781,15 +748,13 @@
             }
             document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
-            // NQ par site
             let pctTana = totalNQ > 0 ? Math.round((countTana / totalNQ) * 100) : 0;
             let pctDiego = totalNQ > 0 ? Math.round((countDiego / totalNQ) * 100) : 0;
             document.getElementById('tana-val').textContent = countTana + ' NQ';
-            document.getElementById('tana-pct').textContent = `Part : ${pctTana}% | Taux : ${totalNQ > 0 ? (countTana/totalNQ*100).toFixed(2) : 0}%`;
+            document.getElementById('tana-pct').textContent = `Part : ${pctTana}%`;
             document.getElementById('diego-val').textContent = countDiego + ' NQ';
-            document.getElementById('diego-pct').textContent = `Part : ${pctDiego}% | Taux : ${totalNQ > 0 ? (countDiego/totalNQ*100).toFixed(2) : 0}%`;
+            document.getElementById('diego-pct').textContent = `Part : ${pctDiego}%`;
 
-            // Plan d'action dynamique
             document.getElementById('alerte-rouge-texte').textContent = nonDebriefs > 0 ? `${nonDebriefs} ligne(s) non débriefée(s) nécessitent une action immédiate.` : 'Aucune alerte critique en cours.';
         }
     </script>
