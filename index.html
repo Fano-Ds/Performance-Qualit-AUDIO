@@ -144,7 +144,7 @@
             white-space: nowrap;
         }
 
-        /* BARRE D'IMPORT DE FICHIER / DONNÉES */
+        /* ZONE D'IMPORT STYLE RINO / LIRIS */
         .import-bar {
             background: var(--bg-card);
             border: 2px dashed var(--border-color);
@@ -346,14 +346,14 @@
         <div class="header-slogan">« Mesurer la qualité. Comprendre les écarts. Piloter la performance. »</div>
     </header>
 
-    <!-- ZONE D'IMPORT DIRECT DE FICHIER -->
+    <!-- ZONE D'IMPORT FICHIER CSV -->
     <div class="import-bar">
         <div>
-            <strong style="font-size: 13px; display: block; margin-bottom: 2px;">📂 Alimentation des données</strong>
-            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Glissez votre fichier CSV ici ou sélectionnez-le pour mettre à jour le dashboard</span>
+            <strong style="font-size: 13px; display: block; margin-bottom: 2px;">📂 Glissez ou importez votre fichier CSV</strong>
+            <span id="import-status" style="font-size: 11px; color: var(--text-muted);">Sélectionnez votre export CSV pour mettre à jour le dashboard</span>
         </div>
         <label class="btn-import">
-            📁 Choisir un fichier CSV
+            📁 Choisir le fichier CSV
             <input type="file" id="csv-file-input" accept=".csv" onchange="importerFichierLocal(event)">
         </label>
     </div>
