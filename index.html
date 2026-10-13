@@ -623,79 +623,102 @@
             let agentsCount = {};
             let totalNQ = 0, debriefsRealises = 0, nonDebriefs = 0;
             let countTana = 0, countDiego = 0;
+            let totalProductionLignes = 0;
 
             for (let i = 0; i < donneesMatriceGlobales.length; i++) {
                 const cols = donneesMatriceGlobales[i];
-                if (!cols || cols.length < 3) continue;
+                if (!cols || cols.length < 5) continue;
 
                 let ligneTexte = cols.join(' ').toLowerCase();
                 if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation') || ligneTexte.trim() === '') continue;
 
-                // 1. Détection intelligente de l'agent (nom en majuscules ou texte long sans date/site)
-                let agent = '';
-                for (let c = 0; c < cols.length; c++) {
-                    let val = cols[c];
-                    if (val && val.length > 3 && /[A-ZÀ-ÖØ-Þ]/.test(val) && !val.includes('/') && !val.includes('S0') && !val.toUpperCase().includes('TANA') && !val.toUpperCase().includes('DIEGO') && !val.toLowerCase().includes('janvier') && !val.toLowerCase().includes('février')) {
-                        // Vérifie si ça ressemble à un prénom/nom (contient un espace ou est en majuscules)
-                        if (val === val.toUpperCase() || val.includes(' ')) {
-                            agent = val;
-                            break;
+                // Agent (Col E / index 4)
+                let agent = String(cols[4] || '').trim();
+                if (!agent || agent.length < 2 || agent.includes('S0') || agent.includes('/')) {
+                    for (let c = 0; c < Math.min(cols.length, 6); c++) {
+                        let val = cols[c];
+                        if (val && val.length > 3 && /[A-ZÀ-ÖØ-Þ]/.test(val) && !val.includes('/') && !val.includes('S0')) {
+                            agent = val; break;
                         }
                     }
                 }
-                if (!agent && cols[4]) agent = cols[4];
                 if (!agent) agent = 'Inconnu';
+
+                totalProductionLignes++;
                 agentsSet.add(agent);
 
-                // 2. Détection du site (TANA / DIEGO)
-                let site = '';
-                cols.forEach(col => {
-                    let u = col.toUpperCase();
-                    if (u === 'TANA' || u.includes('ANTANANARIVO')) site = 'TANA';
-                    if (u === 'DIEGO') site = 'DIEGO';
-                });
+                // Site (Col F / index 5 ou recherche globale)
+                let site = String(cols[5] || '').toUpperCase();
+                if (!site.includes('TANA') && !site.includes('DIEGO')) {
+                    cols.forEach(col => {
+                        let u = col.toUpperCase();
+                        if (u === 'TANA' || u.includes('ANTANANARIVO')) site = 'TANA';
+                        if (u === 'DIEGO') site = 'DIEGO';
+                    });
+                }
 
-                // 3. Détection de la date / mois de diffusion
-                let moisLigne = '';
-                cols.forEach(col => {
-                    let m = extraireMois(col);
-                    if (m && !moisLigne) moisLigne = m;
-                });
+                // Date de diffusion (Col G / index 6)
+                let dateDiffusion = cols[6] || '';
+                let moisLigne = extraireMois(dateDiffusion);
 
-                // 4. Détection du type de NQ (par mots-clés dans toute la ligne)
+                // Colonnes K, L, M (Constats NQ)
+                let mauvaiseVal = cols[10] || '';
+                let loupeVal = cols[11] || '';
+                let ncVal = cols[12] || '';
+
                 let typeNQ = '';
-                cols.forEach(col => {
-                    let cl = col.toLowerCase();
-                    if (cl.includes('cqtv') || cl.includes('visuel')) typeNQ = 'LOUPÉ VISUEL / CQTV';
-                    else if (cl.includes('loupé') || cl.includes('loupe') || cl.includes('mot-clé')) typeNQ = 'LOUPÉ RÉDACTION';
-                    else if (cl.includes('non-conforme') || cl.includes('non conforme') || cl.includes('infidèle')) typeNQ = 'NON CONFORME';
-                    else if (cl.includes('lire sur') || cl.includes('chroniqueuse') || cl.includes('doublon') || cl.includes('passage significatif') || cl.includes('mauvaise')) typeNQ = 'MAUVAISE';
-                });
+                let loupeLower = loupeVal.toLowerCase();
+
+                if (mauvaiseVal !== '' && !/rien/i.test(mauvaiseVal)) {
+                    typeNQ = 'MAUVAISE';
+                } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
+                    if (loupeLower.includes('cqtv') || loupeLower.includes('visuel')) {
+                        typeNQ = 'LOUPÉ VISUEL / CQTV';
+                    } else {
+                        typeNQ = 'LOUPÉ RÉDACTION';
+                    }
+                } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
+                    typeNQ = 'NON CONFORME';
+                } else {
+                    // Analyse de secours
+                    cols.forEach(c => {
+                        let cl = c.toLowerCase();
+                        if (cl.includes('cqtv') || cl.includes('visuel')) typeNQ = 'LOUPÉ VISUEL / CQTV';
+                        else if (cl.includes('loupé') || cl.includes('loupe') || cl.includes('mot-clé')) typeNQ = 'LOUPÉ RÉDACTION';
+                        else if (cl.includes('non-conforme') || cl.includes('non conforme') || cl.includes('infidèle')) typeNQ = 'NON CONFORME';
+                        else if (cl.includes('lire sur') || cl.includes('chroniqueuse') || cl.includes('doublon') || cl.includes('passage significatif')) typeNQ = 'MAUVAISE';
+                    });
+                }
 
                 if (!typeNQ || !statsCategories[typeNQ]) continue;
 
-                // 5. Imputabilité (O / N / Vide)
+                // Imputabilité (O/N)
                 let imputableVal = '';
-                cols.forEach(col => {
-                    let u = col.trim().toUpperCase();
-                    if (u === 'O' || u === 'N') imputableVal = u;
-                });
+                for (let c = 13; c < cols.length; c++) {
+                    let u = String(cols[c] || '').trim().toUpperCase();
+                    if (u === 'O' || u === 'N') { imputableVal = u; break; }
+                }
+                if (!imputableVal) {
+                    cols.forEach(col => {
+                        let u = col.trim().toUpperCase();
+                        if (u === 'O' || u === 'N') imputableVal = u;
+                    });
+                }
 
-                if (imputableVal === 'N') continue; // Exclu si Imputable N
+                if (imputableVal === 'N') continue;
 
-                // 6. Débrief (O / N)
+                // Débrief (O/N)
                 let debriefVal = '';
                 cols.forEach(col => {
                     let u = col.trim().toUpperCase();
                     if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
                 });
 
-                // Application des filtres
+                // Filtrage
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
-                if (siteFiltre !== 'TOUS' && site && site !== siteFiltre) continue;
+                if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
-                // Comptabilisation
                 if (imputableVal === 'O') {
                     statsCategories[typeNQ].imputableO++;
                     totalNQ++;
@@ -706,11 +729,10 @@
                     statsCategories[typeNQ].vide++;
                 }
 
-                if (site === 'TANA') countTana++;
-                if (site === 'DIEGO') countDiego++;
+                if (site.includes('TANA')) countTana++;
+                if (site.includes('DIEGO')) countDiego++;
             }
 
-            // Mise à jour de la liste déroulante des agents
             if (agentSelect) {
                 const currentAgentVal = agentSelect.value;
                 agentSelect.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -721,15 +743,13 @@
                 });
             }
 
-            // Mise à jour des KPIs
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage du tableau des catégories
             let tableCatHtml = '';
             let index = 1;
-            let baseProd = totalNQ > 0 ? totalNQ : 1;
+            let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
 
             for (let [cat, data] of Object.entries(statsCategories)) {
                 let tauxReelNum = (data.imputableO / baseProd) * 100;
@@ -758,12 +778,10 @@
             }
             document.getElementById('table-categories').innerHTML = tableCatHtml;
 
-            // Avancement des débriefings
             let pctDebrief = totalNQ > 0 ? Math.round((debriefsRealises / totalNQ) * 100) : 0;
             document.getElementById('pct-debrief-val').textContent = pctDebrief + '%';
             document.getElementById('bar-debrief-global').style.width = pctDebrief + '%';
 
-            // Top Agents (Flop NQ)
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
             for (let [ag, cnt] of sortedAgents) {
@@ -773,7 +791,6 @@
             }
             document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
-            // NQ par site
             let pctTana = totalNQ > 0 ? Math.round((countTana / totalNQ) * 100) : 0;
             let pctDiego = totalNQ > 0 ? Math.round((countDiego / totalNQ) * 100) : 0;
             document.getElementById('tana-val').textContent = countTana + ' NQ';
