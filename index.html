@@ -24,6 +24,8 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PapaParse pour lire facilement le fichier CSV en direct -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-[#0b0f19] text-slate-100 font-sans antialiased min-h-screen p-4 md:p-6">
 
@@ -33,42 +35,46 @@
             Quality Performance Center — Audio
         </h1>
         <p class="text-xs md:text-sm text-slate-400 text-center">
-            Mesurer la qualité. Comprendre les écarts. Piloter la performance.
+            Mesurer la qualité. Comprendre les écarts. Piloter la performance (Basé sur la Date de Diffusion).
         </p>
     </header>
 
-    <!-- Barre de filtres -->
-    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-lg">
-        <div class="flex flex-wrap items-center gap-3">
+    <!-- Barre de filtres (Mois de Janvier à Décembre) -->
+    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
             <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400">Période :</span>
-                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
-                    <option>Toutes</option>
-                    <option>Janvier</option>
-                    <option>Février</option>
+                <span class="text-xs text-slate-400 font-medium">Période (Mois) :</span>
+                <select id="filter-mois" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
+                    <option value="Tous">Tous</option>
+                    <option value="janvier">Janvier</option>
+                    <option value="février">Février</option>
+                    <option value="mars">Mars</option>
+                    <option value="avril">Avril</option>
+                    <option value="mai">Mai</option>
+                    <option value="juin">Juin</option>
+                    <option value="juillet">Juillet</option>
+                    <option value="août">Août</option>
+                    <option value="septembre">Septembre</option>
+                    <option value="octobre">Octobre</option>
+                    <option value="novembre">Novembre</option>
+                    <option value="décembre">Décembre</option>
                 </select>
-            </div>
-            <div class="hidden md:flex gap-1">
-                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Janvier</span>
-                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Février</span>
-                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Mars</span>
-                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Avril</span>
             </div>
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 w-full xl:w-auto justify-end">
             <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400">Site :</span>
-                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
-                    <option>Tous</option>
-                    <option>TANA</option>
-                    <option>DIEGO</option>
+                <span class="text-xs text-slate-400 font-medium">Site :</span>
+                <select id="filter-site" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
+                    <option value="Tous">Tous</option>
+                    <option value="TANA">TANA</option>
+                    <option value="DIEGO">DIEGO</option>
                 </select>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400">Agent :</span>
-                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
-                    <option>Tous les agents</option>
+                <span class="text-xs text-slate-400 font-medium">Agent :</span>
+                <select id="filter-agent" class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none text-slate-200" onchange="filterData()">
+                    <option value="Tous">Tous les agents</option>
                 </select>
             </div>
         </div>
@@ -79,7 +85,7 @@
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">NQ validées</p>
-                <h3 class="text-2xl font-bold text-teal-400">298 <i class="fa-solid fa-caret-up text-xs"></i></h3>
+                <h3 id="kpi-nq" class="text-2xl font-bold text-teal-400">0</h3>
             </div>
             <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
                 <div class="w-1/4 bg-teal-500 h-1/3 rounded-t"></div>
@@ -91,7 +97,7 @@
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Lignes non débriefées</p>
-                <h3 class="text-2xl font-bold text-red-400">36</h3>
+                <h3 id="kpi-non-debrief" class="text-2xl font-bold text-red-400">0</h3>
             </div>
             <div class="h-8 w-24 bg-red-500/10 rounded flex items-end px-1 gap-0.5">
                 <div class="w-1/4 bg-red-500 h-full rounded-t"></div>
@@ -103,7 +109,7 @@
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Débriefs réalisés</p>
-                <h3 class="text-2xl font-bold text-teal-400">33</h3>
+                <h3 id="kpi-debrief" class="text-2xl font-bold text-teal-400">0</h3>
             </div>
             <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
                 <div class="w-1/4 bg-teal-500 h-1/4 rounded-t"></div>
@@ -114,152 +120,195 @@
         </div>
     </div>
 
-    <!-- Suivi par Catégorie & Retards de Production -->
+    <!-- Suivi par Catégorie -->
     <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg overflow-x-auto">
-        <h2 class="text-sm font-semibold mb-3 text-slate-300">Suivi par Catégorie & Retards de Production</h2>
+        <h2 class="text-sm font-semibold mb-3 text-slate-300">Suivi par Catégorie d'Erreurs</h2>
         <table class="w-full text-left border-collapse text-xs">
             <thead>
                 <tr class="border-b border-[#1e293b] text-slate-400">
                     <th class="py-2 px-3">Catégorie</th>
-                    <th class="py-2 px-3 text-right">OK</th>
-                    <th class="py-2 px-3 text-right">Contestations</th>
-                    <th class="py-2 px-3 text-right">Vides</th>
-                    <th class="py-2 px-3 text-right">Objectif</th>
-                    <th class="py-2 px-3 text-right">Taux Réel</th>
-                    <th class="py-2 px-3 text-center">Statut</th>
+                    <th class="py-2 px-3 text-right">Total Cas</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#1e293b]">
-                <tr class="hover:bg-slate-800/40">
-                    <td class="py-2.5 px-3 font-medium">1 MAUVAISE</td>
-                    <td class="py-2.5 px-3 text-right">2 263</td>
-                    <td class="py-2.5 px-3 text-right">426</td>
-                    <td class="py-2.5 px-3 text-right">69</td>
-                    <td class="py-2.5 px-3 text-right">Obj 0,18 %</td>
-                    <td class="py-2.5 px-3 text-right">0,12 %</td>
-                    <td class="py-2.5 px-3 text-center"><span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded text-[10px] font-semibold">Tenu</span></td>
-                </tr>
-                <tr class="hover:bg-slate-800/40">
-                    <td class="py-2.5 px-3 font-medium">2 LOUPÉ</td>
-                    <td class="py-2.5 px-3 text-right">1 855</td>
-                    <td class="py-2.5 px-3 text-right">298</td>
-                    <td class="py-2.5 px-3 text-right">2</td>
-                    <td class="py-2.5 px-3 text-right">Obj 0,008 %</td>
-                    <td class="py-2.5 px-3 text-right">0,005 %</td>
-                    <td class="py-2.5 px-3 text-center"><span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded text-[10px] font-semibold">Tenu</span></td>
-                </tr>
-                <tr class="bg-red-500/10 border-l-4 border-red-500">
-                    <td class="py-2.5 px-3 font-medium text-red-300">3 NON CONFORME</td>
-                    <td class="py-2.5 px-3 text-right">1 343</td>
-                    <td class="py-2.5 px-3 text-right">84</td>
-                    <td class="py-2.5 px-3 text-right">3</td>
-                    <td class="py-2.5 px-3 text-right">Obj 0,07 %</td>
-                    <td class="py-2.5 px-3 text-right">0,09 %</td>
-                    <td class="py-2.5 px-3 text-center"><span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px] font-semibold">Alerte</span></td>
-                </tr>
-                <tr class="hover:bg-slate-800/40">
-                    <td class="py-2.5 px-3 font-medium">4 LOUPÉ VISUEL</td>
-                    <td class="py-2.5 px-3 text-right">1 292</td>
-                    <td class="py-2.5 px-3 text-right">795</td>
-                    <td class="py-2.5 px-3 text-right">4</td>
-                    <td class="py-2.5 px-3 text-right">Obj 1,40 %</td>
-                    <td class="py-2.5 px-3 text-right">1,15 %</td>
-                    <td class="py-2.5 px-3 text-center"><span class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[10px] font-semibold">Vigilance</span></td>
-                </tr>
+            <tbody id="table-categories" class="divide-y divide-[#1e293b]">
+                <!-- Généré dynamiquement -->
             </tbody>
         </table>
     </div>
 
-    <!-- Plan d'Action (3 Niveaux d'Alerte) -->
-    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg">
-        <h2 class="text-sm font-semibold mb-3 text-slate-300">Plan d'Action (3 Niveaux d'Alerte)</h2>
-        <div class="space-y-2 text-xs">
-            <div class="bg-red-950/30 border border-red-500/40 rounded p-2.5 flex items-center gap-3">
-                <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[10px] font-bold">Alerte Rouge (Critique)</span>
-                <span class="text-slate-300">Action correctif de relie débriefiquier : voct de moire or ccibiqualité de la roation.</span>
-            </div>
-            <div class="bg-amber-950/30 border border-amber-500/40 rounded p-2.5 flex items-center gap-3">
-                <span class="bg-amber-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">Alerte Orange (Vigilance)</span>
-                <span class="text-slate-300">Action correctif de relie débriefiquer : vost de brenxi prace orange rori averneirt.</span>
-            </div>
-            <div class="bg-teal-950/30 border border-teal-500/40 rounded p-2.5 flex items-center gap-3">
-                <span class="bg-teal-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">Alerte Verte (Tenu)</span>
-                <span class="text-slate-300">Action correctif de réalisation anteienédn à la cute de tisntue.</span>
-            </div>
-        </div>
-    </div>
-
     <!-- Section Inférieure : Agents à accompagner et NQ par site -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Flop 5 NQ -->
+        <!-- Flop Agents NQ -->
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg overflow-x-auto">
-            <h2 class="text-sm font-semibold mb-3 text-slate-300">Agents à accompagner — Flop 5 NQ du mois</h2>
+            <h2 class="text-sm font-semibold mb-3 text-slate-300">Agents à accompagner — Flop NQ de la période</h2>
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="border-b border-[#1e293b] text-slate-400">
                         <th class="py-2 px-2">Agent</th>
-                        <th class="py-2 px-2 text-right">Cumul erreurs NQ</th>
-                        <th class="py-2 px-2 text-right">Taux</th>
-                        <th class="py-2 px-2 text-center">Statut</th>
-                        <th class="py-2 px-2">Action</th>
+                        <th class="py-2 px-2 text-right">Cumul Erreurs NQ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#1e293b]">
-                    <tr>
-                        <td class="py-2 px-2">Agent 1</td>
-                        <td class="py-2 px-2 text-right">14</td>
-                        <td class="py-2 px-2 text-right">0,12 %</td>
-                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
-                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-2">Agent 2</td>
-                        <td class="py-2 px-2 text-right">14</td>
-                        <td class="py-2 px-2 text-right">0,08 %</td>
-                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
-                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-2">Agent 3</td>
-                        <td class="py-2 px-2 text-right">10</td>
-                        <td class="py-2 px-2 text-right">0,09 %</td>
-                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
-                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 px-2">Agent 4</td>
-                        <td class="py-2 px-2 text-right">5</td>
-                        <td class="py-2 px-2 text-right">0,09 %</td>
-                        <td class="py-2 px-2 text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px]">Critique</span></td>
-                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
-                    </tr>
+                <tbody id="table-flop-agents" class="divide-y divide-[#1e293b]">
+                    <!-- Généré dynamiquement -->
                 </tbody>
             </table>
         </div>
 
         <!-- NQ par site -->
         <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex flex-col justify-between">
-            <h2 class="text-sm font-semibold mb-3 text-slate-300">NQ par site (Mois sélectionné)</h2>
+            <h2 class="text-sm font-semibold mb-3 text-slate-300">Répartition NQ par Site</h2>
             <div class="grid grid-cols-2 gap-4 my-auto">
                 <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
                     <p class="text-xs text-slate-400">TANA</p>
-                    <p class="text-xl font-bold text-teal-400 my-1">36 %</p>
-                    <p class="text-[10px] text-slate-400">NQ rate : 35% | Taux Réel 0,02 %</p>
-                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                        <div class="bg-teal-400 h-full w-[36%]")></div>
-                    </div>
+                    <p id="site-tana-count" class="text-xl font-bold text-teal-400 my-1">0</p>
+                    <p class="text-[10px] text-slate-400">Cas enregistrés</p>
                 </div>
                 <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
                     <p class="text-xs text-slate-400">DIEGO</p>
-                    <p class="text-xl font-bold text-red-400 my-1">15 %</p>
-                    <p class="text-[10px] text-slate-400">NQ rate : 16% | Taux Réel 0,05 %</p>
-                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                        <div class="bg-red-400 h-full w-[15%]"></div>
-                    </div>
+                    <p id="site-diego-count" class="text-xl font-bold text-red-400 my-1">0</p>
+                    <p class="text-[10px] text-slate-400">Cas enregistrés</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Script de liaison et calcul automatique -->
+    <script>
+        // Remplacez cette URL par le lien CSV publié de votre Google Sheets (Fichier > Partager > Publier sur le web > CSV)
+        const CSV_URL = "YOUR_CSV_URL_HERE"; 
+
+        let globalData = [];
+
+        // Traduction des mois textuels pour analyse de la "Date de diffusion"
+        const monthsMapping = {
+            "janvier": "01", "février": "02", "mars": "03", "avril": "04",
+            "mai": "05", "juin": "06", "juillet": "07", "août": "08",
+            "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12"
+        };
+
+        // Chargement automatique des données du Google Sheets
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                globalData = results.data;
+                initFilters();
+                filterData();
+            },
+            error: function(err) {
+                console.error("Erreur lors du chargement du Google Sheets :", err);
+                alert("Veuillez bien configurer l'URL du fichier CSV publié dans le code source (variable CSV_URL).");
+            }
+        });
+
+        function initFilters() {
+            const agentsSet = new Set();
+            globalData.forEach(row => {
+                let agent = row['Collaborateur (Agent)'];
+                if (agent) agentsSet.add(agent.trim());
+            });
+
+            const agentSelect = document.getElementById('filter-agent');
+            agentsSet.forEach(agent => {
+                let opt = document.createElement('option');
+                opt.value = agent;
+                opt.textContent = agent;
+                agentSelect.appendChild(opt);
+            });
+        }
+
+        function getMoisFromDateDiffusion(dateStr) {
+            if (!dateStr) return "";
+            dateStr = dateStr.toLowerCase();
+            for (let [moisName, moisNum] of Object.entries(monthsMapping)) {
+                if (dateStr.includes(moisName)) return moisName;
+            }
+            return "";
+        }
+
+        function filterData() {
+            const selectedMois = document.getElementById('filter-mois').value.toLowerCase();
+            const selectedSite = document.getElementById('filter-site').value;
+            const selectedAgent = document.getElementById('filter-agent').value;
+
+            const filtered = globalData.filter(row => {
+                let dateDiff = row['Date de diffusion'] || "";
+                let rowMois = getMoisFromDateDiffusion(dateDiff);
+                let rowSite = (row['Site (Auto)'] || "").trim();
+                let rowAgent = (row['Collaborateur (Agent)'] || "").trim();
+
+                let matchMois = (selectedMois === "tous" || rowMois === selectedMois);
+                let matchSite = (selectedSite === "tous" || rowSite.toUpperCase() === selectedSite.toUpperCase());
+                let matchAgent = (selectedAgent === "tous" || rowAgent === selectedAgent);
+
+                return matchMois && matchSite && matchAgent;
+            });
+
+            updateDashboard(filtered);
+        }
+
+        function updateDashboard(data) {
+            let totalNQ = data.length;
+            let debriefsRealises = 0;
+            let nonDebriefs = 0;
+            let categoriesCount = {};
+            let agentsCount = {};
+            let siteTana = 0;
+            let siteDiego = 0;
+
+            data.forEach(row => {
+                // Débrief (O/N)
+                let debrief = (row['Débrief\r\n(O/N)'] || row['Débrief (O/N)'] || "").trim().toUpperCase();
+                if (debrief === 'O') {
+                    debriefsRealises++;
+                } else {
+                    nonDebriefs++;
+                }
+
+                // Catégorie
+                let cat = (row['Catégorie (AUTO)'] || "Non classé").trim();
+                categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
+
+                // Agent
+                let agent = (row['Collaborateur (Agent)'] || "Inconnu").trim();
+                agentsCount[agent] = (agentsCount[agent] || 0) + 1;
+
+                // Site
+                let site = (row['Site (Auto)'] || "").trim().toUpperCase();
+                if (site === 'TANA') siteTana++;
+                if (site === 'DIEGO') siteDiego++;
+            });
+
+            // Mise à jour des KPI
+            document.getElementById('kpi-nq').textContent = totalNQ;
+            document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
+            document.getElementById('kpi-debrief').textContent = debriefsRealises;
+
+            document.getElementById('site-tana-count').textContent = siteTana;
+            document.getElementById('site-diego-count').textContent = siteDiego;
+
+            // Mise à jour du tableau des catégories
+            let catTableHtml = '';
+            for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
+                catTableHtml += `<tr class="hover:bg-slate-800/40">
+                    <td class="py-2.5 px-3 font-medium">${cat}</td>
+                    <td class="py-2.5 px-3 text-right font-bold text-teal-400">${count}</td>
+                </tr>`;
+            }
+            document.getElementById('table-categories').innerHTML = catTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée</td></tr>`;
+
+            // Mise à jour du Flop Agents (Top 5)
+            let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            let agentTableHtml = '';
+            for (let [agent, count] of sortedAgents) {
+                agentTableHtml += `<tr class="hover:bg-slate-800/40">
+                    <td class="py-2 px-2 font-medium">${agent}</td>
+                    <td class="py-2 px-2 text-right font-bold text-red-400">${count}</td>
+                </tr>`;
+            }
+            document.getElementById('table-flop-agents').innerHTML = agentTableHtml || `<tr><td colspan="2" class="py-3 text-center text-slate-500">Aucune donnée</td></tr>`;
+        }
+    </script>
 </body>
 </html>
