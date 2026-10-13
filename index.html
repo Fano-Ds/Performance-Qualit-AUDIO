@@ -275,7 +275,6 @@
             font-size: 10px;
             font-weight: 700;
         }
-        .status-tenu { background: #d1fae5; color: #065f46; }
         .status-surveiller { background: #fef3c7; color: #b45309; }
         .status-depasse { background: #fee2e2; color: #991b1b; }
 
@@ -334,7 +333,7 @@
                 <option value="juillet">Juillet</option>
                 <option value="août">Août</option>
                 <option value="septembre">Septembre</option>
-                <option value="octobre">Octobre</option>
+                <option value="octobre" selected>Octobre</option>
                 <option value="novembre">Novembre</option>
                 <option value="décembre">Décembre</option>
             </select>
@@ -356,30 +355,30 @@
     <!-- KPI CARDS -->
     <div class="kpi-container">
         <div class="kpi-card">
-            <h3>NQ Validées</h3>
+            <h3>NQ Validées (Cumul)</h3>
             <div class="value" id="kpi-nq">0</div>
-            <div class="subtitle">Total des non-qualités</div>
+            <div class="subtitle">Total incluant OK et Vides (hors KO)</div>
         </div>
         <div class="kpi-card">
-            <h3>Lignes non débriefées</h3>
-            <div class="value" id="kpi-non-debrief" style="color: var(--danger);">0</div>
-            <div class="subtitle">Débrief (O/N) != O ou vide</div>
-        </div>
-        <div class="kpi-card">
-            <h3>Débriefs réalisés</h3>
+            <h3>Débriefs Réalisés</h3>
             <div class="value" id="kpi-debrief" style="color: var(--success);">0</div>
-            <div class="subtitle">Débrief (O/N) = O</div>
+            <div class="subtitle">Lignes débriefées</div>
+        </div>
+        <div class="kpi-card">
+            <h3>Lignes Non Débriefées</h3>
+            <div class="value" id="kpi-non-debrief" style="color: var(--danger);">0</div>
+            <div class="subtitle">En attente de débrief</div>
         </div>
     </div>
 
     <!-- SECTION CATÉGORIES & PLAN D'ACTION -->
     <div class="grid-2col">
         <div class="card-section">
-            <h2>Suivi par Catégorie</h2>
+            <h2>Suivi par Type de Non-Qualité</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Catégorie (AUTO)</th>
+                        <th>Type de Non-Qualité</th>
                         <th>Total Cas</th>
                     </tr>
                 </thead>
@@ -390,7 +389,7 @@
         </div>
 
         <div class="card-section">
-            <h2>Plan d'Action / Alertes</h2>
+            <h2>Plan d'Action / Synthèse</h2>
             <div id="pa-container" style="font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
                 <div style="color: var(--text-muted);">Analyse des données en cours...</div>
             </div>
@@ -428,7 +427,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE LIAISON DIRECTE GOOGLE SHEETS -->
+    <!-- SCRIPT DE PARCOURS CSV GOOGLE SHEETS -->
     <script>
         const csvUrl = 'https://docs.google.com/spreadsheets/d/1r0wisfaxztiI-Fu-9sURdIJDVSYqpA0_ewBCPxAuHVI/export?format=csv&gid=1183773468';
 
@@ -450,6 +449,26 @@
             }
         }
 
+        // Fonction pour parser une ligne CSV en gérant les guillemets et virgules internes
+        function parseCSVLine(text) {
+            let result = [];
+            let inQuotes = false;
+            let current = '';
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
         async function rafraichirTableauDeBord() {
             try {
                 const response = await fetch(csvUrl);
@@ -458,55 +477,90 @@
                 const lignes = data.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 if (lignes.length <= 1) return;
 
-                const enTetes = lignes[0].split(',').map(h => h.replace(/"/g, '').trim());
-                
-                // Indexation exacte basée sur vos en-têtes Google Sheets "Qualité"
-                let idxDateDiffusion = enTetes.findIndex(h => h.toLowerCase().includes('date de diffusion'));
-                let idxAgent = enTetes.findIndex(h => h.toLowerCase().includes('collaborateur'));
-                let idxSite = enTetes.findIndex(h => h.toLowerCase().includes('site'));
-                let idxCategorie = enTetes.findIndex(h => h.toLowerCase().includes('catégorie') || h.toLowerCase().includes('categorie'));
-                let idxDebrief = enTetes.findIndex(h => h.toLowerCase().includes('débrief') || h.toLowerCase().includes('debrief'));
+                const enTetes = parseCSVLine(lignes[0]).map(h => h.replace(/"/g, '').trim());
 
-                const moisSelectionne = document.getElementById('filter-periode').value.toLowerCase();
-                const siteSelectionne = document.getElementById('filter-site').value.toUpperCase();
-                const agentSelectionne = document.getElementById('filter-agent').value;
+                // Indexation exacte selon vos consignes :
+                // Colonne G (index 6) = Date de diffusion
+                // Colonne F (index 5) = Site
+                // Colonne H (index 7) = Agent
+                // Colonne K (index 10) = Mauvaise, Colonne L (index 11) = Loupé, Colonne M (index 12) = Non-conforme
+                // Colonne P (index 15) = Validation / comptabilisation (O, N ou vide)
+                // Colonne Q ou R pour le débrief (O/N)
+
+                const moisSelectionne = document.getElementById('filter-periode'].value.toLowerCase();
+                const siteSelectionne = document.getElementById('filter-site'].value.toUpperCase();
+                const agentSelectionne = document.getElementById('filter-agent'].value;
 
                 let agentsSet = new Set();
                 let donneesFiltrees = [];
 
                 for (let i = 1; i < lignes.length; i++) {
-                    const cols = lignes[i].split(',').map(c => c.replace(/"/g, '').trim());
-                    if (cols.length < 3) continue;
+                    const cols = parseCSVLine(lignes[i]).map(c => c.replace(/"/g, '').trim());
+                    if (cols.length < 8) continue;
 
-                    const dateDiff = idxDateDiffusion !== -1 ? cols[idxDateDiffusion] || '' : '';
-                    const agent = idxAgent !== -1 ? cols[idxAgent] || 'Inconnu' : 'Inconnu';
-                    const site = idxSite !== -1 ? (cols[idxSite] || '').toUpperCase() : '';
-                    const categorie = idxCategorie !== -1 ? cols[idxCategorie] || 'Non classé' : 'Non classé';
-                    const debrief = idxDebrief !== -1 ? (cols[idxDebrief] || '').toUpperCase() : '';
+                    const dateDiffusion = cols[6] || ''; // Col G
+                    const site = (cols[5] || '').toUpperCase(); // Col F
+                    const agent = cols[7] || 'Inconnu'; // Col H
+
+                    const mauveVal = cols[10] || ''; // Col K
+                    const loupeVal = cols[11] || ''; // Col L
+                    const ncVal = cols[12] || '';    // Col M
+                    const validationP = (cols[15] || '').toUpperCase(); // Col P
+
+                    // Recherche de la colonne Débrief (généralement autour de l'index 17 ou 18)
+                    let debriefVal = '';
+                    for (let idx = 14; idx < cols.length; idx++) {
+                        let val = cols[idx].toUpperCase();
+                        if (val === 'O' || val === 'N' || val.includes('OUI') || val.includes('NON')) {
+                            debriefVal = val;
+                            break;
+                        }
+                    }
 
                     if (agent && agent !== 'Inconnu') agentsSet.add(agent);
 
-                    // Extraction du mois depuis la Date de diffusion (ex: "vendredi 2 janvier 2026")
+                    // Extraction du mois depuis la Date de diffusion (Col G)
                     let moisLigne = '';
                     const moisNoms = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
                     for (let m of moisNoms) {
-                        if (dateDiff.toLowerCase().includes(m)) {
+                        if (dateDiffusion.toLowerCase().includes(m)) {
                             moisLigne = m;
                             break;
                         }
                     }
 
-                    // Application des filtres
+                    // Règle de comptabilisation (Col P) : 
+                    // "O" = OK, "N" = KO à ne plus compter, et les vides sont comptabilisés
+                    if (validationP.includes('N') && !validationP.includes('NON')) continue; // Ignore les KO (N)
+
+                    // Détermination du type de non-qualité exact
+                    let typeNQ = '';
+                    if (mauveVal !== '' && !mauveVal.toLowerCase().includes('rien')) {
+                        typeNQ = 'MAUVAISE';
+                    } else if (loupeVal !== '' && !loupeVal.toLowerCase().includes('rien')) {
+                        if (loupeVal.toLowerCase().includes('visuel')) {
+                            typeNQ = 'LOUPÉ VISUEL';
+                        } else {
+                            typeNQ = 'LOUPÉ';
+                        }
+                    } else if (ncVal !== '' && !ncVal.toLowerCase().includes('rien')) {
+                        typeNQ = 'NON CONFORME';
+                    } else {
+                        // S'il y a une ligne de suivi mais sans texte précis dans K, L, M, on regarde si la ligne est active
+                        continue;
+                    }
+
+                    // Application des filtres UI
                     let matchMois = (moisSelectionne === 'toutes' || moisLigne === moisSelectionne);
                     let matchSite = (siteSelectionne === 'TOUS' || site.includes(siteSelectionne));
                     let matchAgent = (agentSelectionne === 'tous' || agent === agentSelectionne);
 
                     if (matchMois && matchSite && matchAgent) {
-                        donneesFiltrees.push({ agent, site, categorie, debrief });
+                        donneesFiltrees.push({ agent, site, typeNQ, debrief: debriefVal });
                     }
                 }
 
-                // Remplissage dynamique de la liste des agents (une seule fois)
+                // Remplissage dynamique du filtre agents
                 const selectAgent = document.getElementById('filter-agent');
                 if (selectAgent.options.length <= 1) {
                     Array.from(agentsSet).sort().forEach(ag => {
@@ -517,7 +571,7 @@
                     });
                 }
 
-                // Calculs des KPI et totaux
+                // Calculs finaux
                 let totalNQ = donneesFiltrees.length;
                 let debriefsRealises = 0;
                 let nonDebriefs = 0;
@@ -526,13 +580,13 @@
                 let countTana = 0, countDiego = 0;
 
                 donneesFiltrees.forEach(row => {
-                    if (row.debrief === 'O') {
+                    if (row.debrief.includes('O') || row.debrief.includes('OUI')) {
                         debriefsRealises++;
                     } else {
                         nonDebriefs++;
                     }
 
-                    categoriesCount[row.categorie] = (categoriesCount[row.categorie] || 0) + 1;
+                    categoriesCount[row.typeNQ] = (categoriesCount[row.typeNQ] || 0) + 1;
                     agentsCount[row.agent] = (agentsCount[row.agent] || 0) + 1;
 
                     if (row.site.includes('TANA')) countTana++;
@@ -541,10 +595,10 @@
 
                 // Affichage KPI
                 document.getElementById('kpi-nq').textContent = totalNQ;
-                document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
                 document.getElementById('kpi-debrief').textContent = debriefsRealises;
+                document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
 
-                // Tableau des catégories
+                // Tableau des types de NQ
                 let catHtml = '';
                 for (let [cat, count] of Object.entries(categoriesCount).sort((a,b) => b[1] - a[1])) {
                     catHtml += `<tr><td><strong>${cat}</strong></td><td><strong>${count}</strong></td></tr>`;
@@ -555,8 +609,8 @@
                 let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
                 let agentHtml = '';
                 for (let [ag, cnt] of sortedAgents) {
-                    let badgeClass = cnt >= 10 ? 'status-depasse' : 'status-surveiller';
-                    let badgeText = cnt >= 10 ? 'Critique' : 'À surveiller';
+                    let badgeClass = cnt >= 5 ? 'status-depasse' : 'status-surveiller';
+                    let badgeText = cnt >= 5 ? 'Critique' : 'À surveiller';
                     agentHtml += `<tr><td><strong>${ag}</strong></td><td><strong>${cnt}</strong></td><td><span class="status-badge ${badgeClass}">${badgeText}</span></td></tr>`;
                 }
                 document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
@@ -568,9 +622,9 @@
                 document.getElementById('stat-diego').textContent = countDiego + ' NQ';
                 document.getElementById('bar-diego').style.width = (totalNQ > 0 ? (countDiego / totalNQ) * 100 : 0) + '%';
 
-                // Plan d'action dynamique
+                // Synthèse Plan d'action
                 let paHtml = `<div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;">
-                    <strong>Synthèse de la période :</strong> ${totalNQ} non-qualité(s) analysée(s). ${nonDebriefs} ligne(s) en attente de débriefing.
+                    <strong>Synthèse :</strong> ${totalNQ} erreur(s) comptabilisée(s) sur la période (basée sur la date de diffusion de l'onglet Qualité). ${nonDebriefs} ligne(s) nécessitent un débriefing.
                 </div>`;
                 document.getElementById('pa-container').innerHTML = paHtml;
 
