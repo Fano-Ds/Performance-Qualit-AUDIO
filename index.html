@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Performance Center - Audio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dashboard: {
+                            bg: '#0b0f19',
+                            card: '#131c2e',
+                            border: '#1e293b',
+                            accent: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#0b0f19] text-slate-100 font-sans antialiased min-h-screen p-4 md:p-6">
+
+    <!-- En-tête -->
+    <header class="mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wider text-center uppercase mb-1">
+            Quality Performance Center — Audio
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400 text-center">
+            Mesurer la qualité. Comprendre les écarts. Piloter la performance.
+        </p>
+    </header>
+
+    <!-- Barre de filtres -->
+    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Période :</span>
+                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
+                    <option>Toutes</option>
+                    <option>Janvier</option>
+                    <option>Février</option>
+                </select>
+            </div>
+            <div class="hidden md:flex gap-1">
+                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Janvier</span>
+                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Février</span>
+                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Mars</span>
+                <span class="px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-400 rounded-full font-medium">Avril</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Site :</span>
+                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
+                    <option>Tous</option>
+                    <option>TANA</option>
+                    <option>DIEGO</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Agent :</span>
+                <select class="bg-[#0b0f19] border border-[#1e293b] text-xs rounded px-2 py-1 focus:outline-none">
+                    <option>Tous les agents</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cartes KPI Haut de page -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">NQ validées</p>
+                <h3 class="text-2xl font-bold text-teal-400">298 <i class="fa-solid fa-caret-up text-xs"></i></h3>
+            </div>
+            <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
+                <div class="w-1/4 bg-teal-500 h-1/3 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-2/3 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-1/2 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-full rounded-t"></div>
+            </div>
+        </div>
+        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Lignes non débriefées</p>
+                <h3 class="text-2xl font-bold text-red-400">36</h3>
+            </div>
+            <div class="h-8 w-24 bg-red-500/10 rounded flex items-end px-1 gap-0.5">
+                <div class="w-1/4 bg-red-500 h-full rounded-t"></div>
+                <div class="w-1/4 bg-red-500 h-3/4 rounded-t"></div>
+                <div class="w-1/4 bg-red-500 h-1/2 rounded-t"></div>
+                <div class="w-1/4 bg-red-500 h-1/4 rounded-t"></div>
+            </div>
+        </div>
+        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Débriefs réalisés</p>
+                <h3 class="text-2xl font-bold text-teal-400">33</h3>
+            </div>
+            <div class="h-8 w-24 bg-teal-500/10 rounded flex items-end px-1 gap-0.5">
+                <div class="w-1/4 bg-teal-500 h-1/4 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-1/2 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-3/4 rounded-t"></div>
+                <div class="w-1/4 bg-teal-500 h-full rounded-t"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suivi par Catégorie & Retards de Production -->
+    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg overflow-x-auto">
+        <h2 class="text-sm font-semibold mb-3 text-slate-300">Suivi par Catégorie & Retards de Production</h2>
+        <table class="w-full text-left border-collapse text-xs">
+            <thead>
+                <tr class="border-b border-[#1e293b] text-slate-400">
+                    <th class="py-2 px-3">Catégorie</th>
+                    <th class="py-2 px-3 text-right">OK</th>
+                    <th class="py-2 px-3 text-right">Contestations</th>
+                    <th class="py-2 px-3 text-right">Vides</th>
+                    <th class="py-2 px-3 text-right">Objectif</th>
+                    <th class="py-2 px-3 text-right">Taux Réel</th>
+                    <th class="py-2 px-3 text-center">Statut</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#1e293b]">
+                <tr class="hover:bg-slate-800/40">
+                    <td class="py-2.5 px-3 font-medium">1 MAUVAISE</td>
+                    <td class="py-2.5 px-3 text-right">2 263</td>
+                    <td class="py-2.5 px-3 text-right">426</td>
+                    <td class="py-2.5 px-3 text-right">69</td>
+                    <td class="py-2.5 px-3 text-right">Obj 0,18 %</td>
+                    <td class="py-2.5 px-3 text-right">0,12 %</td>
+                    <td class="py-2.5 px-3 text-center"><span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded text-[10px] font-semibold">Tenu</span></td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                    <td class="py-2.5 px-3 font-medium">2 LOUPÉ</td>
+                    <td class="py-2.5 px-3 text-right">1 855</td>
+                    <td class="py-2.5 px-3 text-right">298</td>
+                    <td class="py-2.5 px-3 text-right">2</td>
+                    <td class="py-2.5 px-3 text-right">Obj 0,008 %</td>
+                    <td class="py-2.5 px-3 text-right">0,005 %</td>
+                    <td class="py-2.5 px-3 text-center"><span class="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded text-[10px] font-semibold">Tenu</span></td>
+                </tr>
+                <tr class="bg-red-500/10 border-l-4 border-red-500">
+                    <td class="py-2.5 px-3 font-medium text-red-300">3 NON CONFORME</td>
+                    <td class="py-2.5 px-3 text-right">1 343</td>
+                    <td class="py-2.5 px-3 text-right">84</td>
+                    <td class="py-2.5 px-3 text-right">3</td>
+                    <td class="py-2.5 px-3 text-right">Obj 0,07 %</td>
+                    <td class="py-2.5 px-3 text-right">0,09 %</td>
+                    <td class="py-2.5 px-3 text-center"><span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px] font-semibold">Alerte</span></td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                    <td class="py-2.5 px-3 font-medium">4 LOUPÉ VISUEL</td>
+                    <td class="py-2.5 px-3 text-right">1 292</td>
+                    <td class="py-2.5 px-3 text-right">795</td>
+                    <td class="py-2.5 px-3 text-right">4</td>
+                    <td class="py-2.5 px-3 text-right">Obj 1,40 %</td>
+                    <td class="py-2.5 px-3 text-right">1,15 %</td>
+                    <td class="py-2.5 px-3 text-center"><span class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[10px] font-semibold">Vigilance</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Plan d'Action (3 Niveaux d'Alerte) -->
+    <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 mb-6 shadow-lg">
+        <h2 class="text-sm font-semibold mb-3 text-slate-300">Plan d'Action (3 Niveaux d'Alerte)</h2>
+        <div class="space-y-2 text-xs">
+            <div class="bg-red-950/30 border border-red-500/40 rounded p-2.5 flex items-center gap-3">
+                <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[10px] font-bold">Alerte Rouge (Critique)</span>
+                <span class="text-slate-300">Action correctif de relie débriefiquier : voct de moire or ccibiqualité de la roation.</span>
+            </div>
+            <div class="bg-amber-950/30 border border-amber-500/40 rounded p-2.5 flex items-center gap-3">
+                <span class="bg-amber-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">Alerte Orange (Vigilance)</span>
+                <span class="text-slate-300">Action correctif de relie débriefiquer : vost de brenxi prace orange rori averneirt.</span>
+            </div>
+            <div class="bg-teal-950/30 border border-teal-500/40 rounded p-2.5 flex items-center gap-3">
+                <span class="bg-teal-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">Alerte Verte (Tenu)</span>
+                <span class="text-slate-300">Action correctif de réalisation anteienédn à la cute de tisntue.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Inférieure : Agents à accompagner et NQ par site -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Flop 5 NQ -->
+        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg overflow-x-auto">
+            <h2 class="text-sm font-semibold mb-3 text-slate-300">Agents à accompagner — Flop 5 NQ du mois</h2>
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-[#1e293b] text-slate-400">
+                        <th class="py-2 px-2">Agent</th>
+                        <th class="py-2 px-2 text-right">Cumul erreurs NQ</th>
+                        <th class="py-2 px-2 text-right">Taux</th>
+                        <th class="py-2 px-2 text-center">Statut</th>
+                        <th class="py-2 px-2">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#1e293b]">
+                    <tr>
+                        <td class="py-2 px-2">Agent 1</td>
+                        <td class="py-2 px-2 text-right">14</td>
+                        <td class="py-2 px-2 text-right">0,12 %</td>
+                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
+                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-2">Agent 2</td>
+                        <td class="py-2 px-2 text-right">14</td>
+                        <td class="py-2 px-2 text-right">0,08 %</td>
+                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
+                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-2">Agent 3</td>
+                        <td class="py-2 px-2 text-right">10</td>
+                        <td class="py-2 px-2 text-right">0,09 %</td>
+                        <td class="py-2 px-2 text-center"><span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px]">À surveiller</span></td>
+                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 px-2">Agent 4</td>
+                        <td class="py-2 px-2 text-right">5</td>
+                        <td class="py-2 px-2 text-right">0,09 %</td>
+                        <td class="py-2 px-2 text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px]">Critique</span></td>
+                        <td class="py-2 px-2 text-slate-400 truncate max-w-[100px]">Action un reston vie...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- NQ par site -->
+        <div class="bg-[#131c2e] border border-[#1e293b] rounded-xl p-4 shadow-lg flex flex-col justify-between">
+            <h2 class="text-sm font-semibold mb-3 text-slate-300">NQ par site (Mois sélectionné)</h2>
+            <div class="grid grid-cols-2 gap-4 my-auto">
+                <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
+                    <p class="text-xs text-slate-400">TANA</p>
+                    <p class="text-xl font-bold text-teal-400 my-1">36 %</p>
+                    <p class="text-[10px] text-slate-400">NQ rate : 35% | Taux Réel 0,02 %</p>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-teal-400 h-full w-[36%]")></div>
+                    </div>
+                </div>
+                <div class="bg-[#0b0f19] p-3 rounded-lg border border-[#1e293b]">
+                    <p class="text-xs text-slate-400">DIEGO</p>
+                    <p class="text-xl font-bold text-red-400 my-1">15 %</p>
+                    <p class="text-[10px] text-slate-400">NQ rate : 16% | Taux Réel 0,05 %</p>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-red-400 h-full w-[15%]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
