@@ -441,13 +441,12 @@
     </div>
 
     <div class="card-section">
-        <h2>Suivi par Catégorie & Taux Réel (Imputable O)</h2>
+        <h2>Suivi par Catégorie & Taux Réel</h2>
         <table>
             <thead>
                 <tr>
                     <th>Catégorie</th>
                     <th>Imputable O (Comptabilisées)</th>
-                    <th>Imputable N (Exclues)</th>
                     <th>Vides (En attente)</th>
                     <th>Objectif</th>
                     <th>Taux Réel</th>
@@ -455,7 +454,7 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Veuillez coller vos données ci-dessus et cliquer sur Mettre à jour...</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Veuillez coller vos données ci-dessus et cliquer sur Mettre à jour...</td></tr>
             </tbody>
         </table>
     </div>
@@ -585,10 +584,10 @@
             let agentsSet = new Set();
             
             let statsCategories = {
-                'MAUVAISE': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.18 },
-                'LOUPÉ RÉDACTION': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.008 },
-                'NON CONFORME': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.07 },
-                'LOUPÉ VISUEL / CQTV': { imputableO: 0, imputableN: 0, vide: 0, objectif: 1.40 }
+                'MAUVAISE': { imputableO: 0, vide: 0, objectif: 0.18 },
+                'LOUPÉ RÉDACTION': { imputableO: 0, vide: 0, objectif: 0.008 },
+                'NON CONFORME': { imputableO: 0, vide: 0, objectif: 0.07 },
+                'LOUPÉ VISUEL / CQTV': { imputableO: 0, vide: 0, objectif: 1.40 }
             };
 
             let agentsCount = {};
@@ -596,21 +595,18 @@
             let countTana = 0, countDiego = 0;
             let totalProductionLignes = 0;
 
-            for (let i = 1; i < donneesMatriceGlobales.length; i++) {
+            for (let i = 0; i < donneesMatriceGlobales.length; i++) {
                 const cols = donneesMatriceGlobales[i];
-                if (!cols || cols.length < 5) continue;
+                if (!cols || cols.length < 3) continue;
 
                 let ligneTexte = cols.join(' ').toLowerCase();
 
-                // Ignorer les lignes d'en-tête ou vides
-                if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation') || ligneTexte.trim() === '') continue;
+                if (ligneTexte.includes('collaborateur') || ligneTexte.includes('agent') || ligneTexte.includes('date d\'indexation')) continue;
 
-                // Recherche dynamique de l'agent (on prend la première colonne texte qui ressemble à un nom propre ou non vide après la date)
                 let agent = '';
                 for (let c = 0; c < Math.min(cols.length, 8); c++) {
                     let val = cols[c];
-                    if (val && val.length > 3 && !val.includes('/') && !val.includes('S0') && !val.includes('janvier') && !val.includes('février') && !val.includes('mars') && !val.includes('avril') && !val.includes('mai') && !val.includes('juin') && !val.includes('juillet') && !val.includes('août') && !val.includes('septembre') && !val.includes('octobre') && !val.includes('novembre') && !val.includes('décembre')) {
-                        // Si la casse est en majuscules ou contient des lettres
+                    if (val && val.length > 2 && !val.includes('/') && !val.includes('S0') && !val.includes('janvier') && !val.includes('février') && !val.includes('mars') && !val.includes('avril') && !val.includes('mai') && !val.includes('juin') && !val.includes('juillet') && !val.includes('août') && !val.includes('septembre') && !val.includes('octobre') && !val.includes('novembre') && !val.includes('décembre')) {
                         if (/[A-ZÀ-ÖØ-Þ]/.test(val)) { agent = val; break; }
                     }
                 }
@@ -619,82 +615,70 @@
                 totalProductionLignes++;
                 agentsSet.add(agent);
 
-                // Site (TANA / DIEGO)
                 let site = '';
                 cols.forEach(col => {
                     let u = col.toUpperCase();
                     if (u === 'TANA' || u === 'DIEGO' || u.includes('ANTANANARIVO')) site = u;
                 });
 
-                // Date de diffusion (pour extraire le mois)
                 let dateDiffusion = '';
                 cols.forEach(col => {
                     if (col.includes('/') && (col.length === 10 || col.length === 8)) dateDiffusion = col;
                 });
 
-                // Analyse intelligente des colonnes de constats (Mauvaise, Loupé, Non-conforme)
-                // On parcourt les cellules pour trouver des indices textuels de non-qualité
-                let mauvaiseTexte = cols[10] || '';
-                let loupeTexte = cols[11] || '';
-                let ncTexte = cols[12] || '';
+                let mauvaiseVal = cols[10] || '';
+                let loupeVal = cols[11] || '';
+                let ncVal = cols[12] || '';
 
-                // Fallback recherche globale si les index fixes sont décalés
                 let typeNQ = '';
-                let foundMauvaise = false, foundLoupe = false, foundNc = false;
-                let loupeDetail = '';
+                let loupeLower = loupeVal.toLowerCase();
 
-                cols.forEach((col, idx) => {
-                    let textLower = col.toLowerCase();
-                    // Si ce n'est pas "rien sur" ou "rien" et que c'est un constat
-                    if (idx >= 9 && idx <= 13) {
-                        if (textLower.includes('rien sur') || textLower.includes('rien')) return;
-                        if (textLower.includes('cqtv') || textLower.includes('visuel')) {
-                            foundLoupe = true;
-                            loupeDetail = 'visuel';
-                        } else if (textLower.includes('loupé') || textLower.includes('loupe') || textLower.includes('mot-clé') || textLower.includes('mot clé')) {
-                            foundLoupe = true;
-                            loupeDetail = ' redaction';
-                        } else if (textLower.includes('non-conforme') || textLower.includes('non conforme') || textLower.includes('infidèle')) {
-                            foundNc = true;
-                        } else if (textLower.length > 5 && (textLower.includes('lire sur') || textLower.includes('chroniqueuse') || textLower.includes('doublon'))) {
-                            foundMauvaise = true;
-                        }
-                    }
-                });
-
-                // Si les colonnes spécifiques K, L, M ont du contenu explicite
-                if (mauvaiseTexte && !/rien/i.test(mauvaiseTexte)) typeNQ = 'MAUVAISE';
-                else if (loupeTexte && !/rien/i.test(loupeTexte)) {
-                    if (loupeTexte.toLowerCase().includes('cqtv') || loupeTexte.toLowerCase().includes('visuel')) typeNQ = 'LOUPÉ VISUEL / CQTV';
-                    else typeNQ = 'LOUPÉ RÉDACTION';
-                }
-                else if (ncTexte && !/rien/i.test(ncTexte)) typeNQ = 'NON CONFORME';
-                else if (foundLoupe) {
-                    typeNQ = loupeDetail === 'visuel' ? 'LOUPÉ VISUEL / CQTV' : 'LOUPÉ RÉDACTION';
-                } else if (foundNc) {
-                    typeNQ = 'NON CONFORME';
-                } else if (foundMauvaise || (mauvaiseTexte !== '')) {
+                if (mauvaiseVal !== '' && !/rien/i.test(mauvaiseVal)) {
                     typeNQ = 'MAUVAISE';
+                } else if (loupeVal !== '' && !/rien/i.test(loupeVal)) {
+                    if (loupeLower.includes('cqtv') || loupeLower.includes('visuel')) {
+                        typeNQ = 'LOUPÉ VISUEL / CQTV';
+                    } else {
+                        typeNQ = 'LOUPÉ RÉDACTION';
+                    }
+                } else if (ncVal !== '' && !/rien/i.test(ncVal)) {
+                    typeNQ = 'NON CONFORME';
                 } else {
-                    // Si aucune NQ identifiée sur cette ligne
-                    continue;
+                    cols.forEach(c => {
+                        let cl = c.toLowerCase();
+                        if (cl.includes('cqtv')) typeNQ = 'LOUPÉ VISUEL / CQTV';
+                        else if (cl.includes('loupé') || cl.includes('loupe') || cl.includes('mot-clé')) typeNQ = 'LOUPÉ RÉDACTION';
+                        else if (cl.includes('non-conforme') || cl.includes('non conforme') || cl.includes('infidèle')) typeNQ = 'NON CONFORME';
+                        else if (cl.includes('lire sur') || cl.includes('chroniqueuse') || cl.includes('doublon') || cl.includes('passage significatif')) typeNQ = 'MAUVAISE';
+                    });
                 }
 
-                // Recherche de la colonne Imputable (O/N)
-                let imputableVal = '';
-                cols.forEach(col => {
-                    let u = col.trim().toUpperCase();
-                    if (u === 'O' || u === 'N') imputableVal = u;
-                });
+                if (!typeNQ) continue;
 
-                // Recherche du débrief (O/N)
+                // Imputabilité (O/N)
+                let imputableVal = '';
+                for (let c = 13; c < cols.length; c++) {
+                    let u = String(cols[c] || '').trim().toUpperCase();
+                    if (u === 'O' || u === 'N') { imputableVal = u; break; }
+                }
+                if (!imputableVal) {
+                    cols.forEach(col => {
+                        let u = col.trim().toUpperCase();
+                        if (u === 'O' || u === 'N') imputableVal = u;
+                    });
+                }
+
+                // Si Imputable 'N', on ignore complètement cette ligne des calculs NQ
+                if (imputableVal === 'N') continue;
+
+                // Débrief (O/N)
                 let debriefVal = '';
                 cols.forEach(col => {
                     let u = col.trim().toUpperCase();
                     if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
                 });
 
-                // Extraction du mois basé sur la Date de diffusion
+                // Mois (Date de diffusion)
                 let moisLigne = '';
                 if (dateDiffusion.includes('/')) {
                     const p = dateDiffusion.split('/');
@@ -708,17 +692,14 @@
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
-                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.10 };
+                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { imputableO: 0, vide: 0, objectif: 0.10 };
 
-                // Comptabilisation stricte selon Imputable O / N / Vide
                 if (imputableVal === 'O') {
                     statsCategories[typeNQ].imputableO++;
                     totalNQ++;
                     if (debriefVal.includes('O') || debriefVal.includes('OUI')) debriefsRealises++;
                     else nonDebriefs++;
                     agentsCount[agent] = (agentsCount[agent] || 0) + 1;
-                } else if (imputableVal === 'N') {
-                    statsCategories[typeNQ].imputableN++;
                 } else {
                     statsCategories[typeNQ].vide++; // Vide = en attente
                 }
@@ -727,7 +708,7 @@
                 if (site.includes('DIEGO')) countDiego++;
             }
 
-            // Mise à jour de la liste des agents
+            // Liste agents
             const selectAgent = document.getElementById('filter-agent');
             const agentActuel = selectAgent.value;
             selectAgent.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -742,7 +723,7 @@
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage du tableau des catégories
+            // Remplissage tableau catégories (sans la colonne Imputable N)
             let tableCatHtml = '';
             let index = 1;
             let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
@@ -775,7 +756,6 @@
                 tableCatHtml += `<tr class="${rowClass}">
                     <td><strong>${index++}. ${cat}</strong></td>
                     <td><strong style="color:var(--success);">${data.imputableO}</strong></td>
-                    <td>${data.imputableN}</td>
                     <td><span style="color:var(--warning);">${data.vide} (en attente)</span></td>
                     <td>Obj. ${objStr}</td>
                     <td><strong>${tauxReelStr}</strong></td>
@@ -784,12 +764,12 @@
             }
             document.getElementById('table-categories').innerHTML = tableCatHtml;
 
-            // Avancement débriefings
+            // Débriefs
             let pctDebrief = totalNQ > 0 ? Math.round((debriefsRealises / totalNQ) * 100) : 0;
             document.getElementById('pct-debrief-val').textContent = pctDebrief + '%';
             document.getElementById('bar-debrief-global').style.width = pctDebrief + '%';
 
-            // Top agents
+            // Agents (Flop NQ)
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
             for (let [ag, cnt] of sortedAgents) {
@@ -799,16 +779,8 @@
             }
             document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
-            // NQ par site
+            // Sites
             let pctTana = totalNQ > 0 ? Math.round((countTana / totalNQ) * 100) : 0;
             let pctDiego = totalNQ > 0 ? Math.round((countDiego / totalNQ) * 100) : 0;
             document.getElementById('tana-val').textContent = countTana + ' NQ';
-            document.getElementById('tana-pct').textContent = `Part : ${pctTana}%`;
-            document.getElementById('diego-val').textContent = countDiego + ' NQ';
-            document.getElementById('diego-pct').textContent = `Part : ${pctDiego}%`;
-
-            document.getElementById('alerte-rouge-texte').textContent = nonDebriefs > 0 ? `${nonDebriefs} ligne(s) non débriefée(s) nécessitent une action immédiate.` : 'Aucune alerte critique en cours.';
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('tana-
