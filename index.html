@@ -564,9 +564,10 @@
 
         function filtrerMoisRapide(mois) {
             moisActif = mois;
-            document.getElementById('filter-periode-select').value = mois;
+            const selectEl = document.getElementById('filter-periode-select');
+            if (selectEl) selectEl.value = mois;
             document.querySelectorAll('.month-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
             rafraichirDashboard();
         }
 
@@ -576,14 +577,16 @@
         }
 
         function rafraichirDashboard() {
-            if (donneesMatriceGlobales.length <= 1) return;
+            if (!donneesMatriceGlobales || donneesMatriceGlobales.length <= 1) return;
 
-            const siteFiltre = document.getElementById('filter-site').value.toUpperCase();
-            const agentFiltre = document.getElementById('filter-agent').value;
+            const siteSelect = document.getElementById('filter-site');
+            const agentSelect = document.getElementById('filter-agent');
+            
+            const siteFiltre = siteSelect ? siteSelect.value.toUpperCase() : 'TOUS';
+            const agentFiltre = agentSelect ? agentSelect.value : 'tous';
 
             let agentsSet = new Set();
             
-            // Catégories avec objectifs précis et formules dédiées
             let statsCategories = {
                 'MAUVAISE': { imputableO: 0, vide: 0, objectif: 0.18 },
                 'NON CONFORME': { imputableO: 0, vide: 0, objectif: 0.07 },
@@ -654,9 +657,8 @@
                     });
                 }
 
-                if (!typeNQ) continue;
+                if (!typeNQ || !statsCategories[typeNQ]) continue;
 
-                // Imputabilité (O/N)
                 let imputableVal = '';
                 for (let c = 13; c < cols.length; c++) {
                     let u = String(cols[c] || '').trim().toUpperCase();
@@ -671,7 +673,6 @@
 
                 if (imputableVal === 'N') continue;
 
-                // Débrief (O/N)
                 let debriefVal = '';
                 cols.forEach(col => {
                     let u = col.trim().toUpperCase();
@@ -691,8 +692,6 @@
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
-                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { imputableO: 0, vide: 0, objectif: 0.10 };
-
                 if (imputableVal === 'O') {
                     statsCategories[typeNQ].imputableO++;
                     totalNQ++;
@@ -700,45 +699,37 @@
                     else nonDebriefs++;
                     agentsCount[agent] = (agentsCount[agent] || 0) + 1;
                 } else {
-                    statsCategories[typeNQ].vide++; // Vide = en attente
+                    statsCategories[typeNQ].vide++;
                 }
 
                 if (site.includes('TANA')) countTana++;
                 if (site.includes('DIEGO')) countDiego++;
             }
 
-            const selectAgent = document.getElementById('filter-agent');
-            const agentActuel = selectAgent.value;
-            selectAgent.innerHTML = '<option value="tous">Tous les agents</option>';
-            Array.from(agentsSet).sort().forEach(ag => {
-                let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
-                if (ag === agentActuel) opt.selected = true;
-                selectAgent.appendChild(opt);
-            });
+            if (agentSelect) {
+                const currentAgentVal = agentSelect.value;
+                agentSelect.innerHTML = '<option value="tous">Tous les agents</option>';
+                Array.from(agentsSet).sort().forEach(ag => {
+                    let opt = document.createElement('option'); opt.value = ag; opt.textContent = ag;
+                    if (ag === currentAgentVal) opt.selected = true;
+                    agentSelect.appendChild(opt);
+                });
+            }
 
-            document.getElementById('kpi-nq').textContent = totalNQ;
-            document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
-            document.getElementById('kpi-debrief').textContent = debriefsRealises;
+            const elKpi = document.getElementById('kpi-nq');
+            const elNonDeb = document.getElementById('kpi-non-debrief');
+            const elDeb = document.getElementById('kpi-debrief');
+
+            if (elKpi) elKpi.textContent = totalNQ;
+            if (elNonDeb) elNonDeb.textContent = nonDebriefs;
+            if (elDeb) elDeb.textContent = debriefsRealises;
 
             let tableCatHtml = '';
             let index = 1;
             let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
 
             for (let [cat, data] of Object.entries(statsCategories)) {
-                let tauxReelNum = 0;
-
-                // Application stricte de vos formules spécifiques par indicateur
-                if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
-                    // nb de [cat] imputable / RMs envoyées * 100
-                    tauxReelNum = (data.imputableO / baseProd) * 100;
-                } else if (cat === 'LOUPÉ RÉDACTION') {
-                    // loupé rédaction imputable / alertes traitées * 100
-                    tauxReelNum = (data.imputableO / baseProd) * 100;
-                } else if (cat === 'LOUPÉ VISUEL / CQTV') {
-                    // nombre de loupé visuel / volume horaire * 100
-                    tauxReelNum = (data.imputableO / baseProd) * 100;
-                }
-
+                let tauxReelNum = (data.imputableO / baseProd) * 100;
                 let tauxReelStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
                 let objStr = data.objectif.toFixed(3).replace('.', ',') + ' %';
 
@@ -762,11 +753,15 @@
                     <td>${statutHtml}</td>
                 </tr>`;
             }
-            document.getElementById('table-categories').innerHTML = tableCatHtml;
+            
+            const tableEl = document.getElementById('table-categories');
+            if (tableEl) tableEl.innerHTML = tableCatHtml;
 
             let pctDebrief = totalNQ > 0 ? Math.round((debriefsRealises / totalNQ) * 100) : 0;
-            document.getElementById('pct-debrief-val').textContent = pctDebrief + '%';
-            document.getElementById('bar-debrief-global').style.width = pctDebrief + '%';
+            const pctDebVal = document.getElementById('pct-debrief-val');
+            const barDeb = document.getElementById('bar-debrief-global');
+            if (pctDebVal) pctDebVal.textContent = pctDebrief + '%';
+            if (barDeb) barDeb.style.width = pctDebrief + '%';
 
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
@@ -775,16 +770,24 @@
                 let tauxAgent = totalNQ > 0 ? ((cnt / totalNQ) * 100).toFixed(2) + '%' : '0%';
                 agentHtml += `<tr><td><strong>${ag}</strong></td><td>${cnt} (${tauxAgent})</td><td>${badge}</td></tr>`;
             }
-            document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
+            const agentsTableBody = document.getElementById('agents-table-body');
+            if (agentsTableBody) agentsTableBody.innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
             let pctTana = totalNQ > 0 ? Math.round((countTana / totalNQ) * 100) : 0;
             let pctDiego = totalNQ > 0 ? Math.round((countDiego / totalNQ) * 100) : 0;
-            document.getElementById('tana-val').textContent = countTana + ' NQ';
-            document.getElementById('tana-pct').textContent = `Part : ${pctTana}%`;
-            document.getElementById('diego-val').textContent = countDiego + ' NQ';
-            document.getElementById('diego-pct').textContent = `Part : ${pctDiego}%`;
+            
+            const tanaVal = document.getElementById('tana-val');
+            const tanaPct = document.getElementById('tana-pct');
+            const diegoVal = document.getElementById('diego-val');
+            const diegoPct = document.getElementById('diego-pct');
 
-            document.getElementById('alerte-rouge-texte').textContent = nonDebriefs > 0 ? `${nonDebriefs} ligne(s) non débriefée(s) nécessitent une action immédiate.` : 'Aucune alerte critique en cours.';
+            if (tanaVal) tanaVal.textContent = countTana + ' NQ';
+            if (tanaPct) tanaPct.textContent = `Part : ${pctTana}%`;
+            if (diegoVal) diegoVal.textContent = countDiego + ' NQ';
+            if (diegoPct) diegoPct.textContent = `Part : ${pctDiego}%`;
+
+            const alerteRouge = document.getElementById('alerte-rouge-texte');
+            if (alerteRouge) alerteRouge.textContent = nonDebriefs > 0 ? `${nonDebriefs} ligne(s) non débriefée(s) nécessitent une action immédiate.` : 'Aucune alerte critique en cours.';
         }
     </script>
 </body>
