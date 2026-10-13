@@ -367,7 +367,7 @@
 
     <div class="paste-panel">
         <h3>📋 Copier-coller direct de votre onglet Qualité (Google Sheets)</h3>
-        <textarea id="raw-data-input" class="paste-textarea" placeholder="Sélectionnez vos lignes dans Google Sheets (depuis l'en-tête Agent jusqu'à la dernière ligne), faites Ctrl+C, puis collez (Ctrl+V) ici..."></textarea>
+        <textarea id="raw-data-input" class="paste-textarea" placeholder="Sélectionnez vos lignes dans Google Sheets, faites Ctrl+C, puis collez (Ctrl+V) ici..."></textarea>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
             <button class="btn-update" onclick="traiterDonneesCollees()">⚡ Mettre à jour le Tableau de Bord</button>
             <span id="debug-status" style="font-size: 11px; color: var(--warning);">En attente de données...</span>
@@ -376,7 +376,7 @@
 
     <div class="top-bar">
         <div class="filter-group">
-            <span>Période :</span>
+            <span>Période (Diffusion) :</span>
             <select id="filter-periode-select" onchange="changerPeriodeSelect(this.value)">
                 <option value="toutes">Toutes</option>
                 <option value="01">Janvier</option>
@@ -427,7 +427,7 @@
 
     <div class="kpi-container">
         <div class="kpi-card">
-            <h3>NQ validées</h3>
+            <h3>NQ validées (Imputable O)</h3>
             <div class="value" id="kpi-nq">0</div>
         </div>
         <div class="kpi-card">
@@ -441,14 +441,14 @@
     </div>
 
     <div class="card-section">
-        <h2>Suivi par Catégorie & Retards de Production</h2>
+        <h2>Suivi par Catégorie & Taux Réel (Imputable O)</h2>
         <table>
             <thead>
                 <tr>
                     <th>Catégorie</th>
-                    <th>OK</th>
-                    <th>Contestations</th>
-                    <th>Vides</th>
+                    <th>Imputable O (Comptabilisées)</th>
+                    <th>Imputable N (Exclues)</th>
+                    <th>Vides (En attente)</th>
                     <th>Objectif</th>
                     <th>Taux Réel</th>
                     <th>Statut</th>
@@ -584,12 +584,12 @@
 
             let agentsSet = new Set();
             
-            // Catégories avec leurs objectifs précis
+            // Catégories avec objectifs précis
             let statsCategories = {
-                'MAUVAISE': { ok: 0, cont: 0, vide: 0, objectif: 0.18 },
-                'LOUPÉ RÉDACTION': { ok: 0, cont: 0, vide: 0, objectif: 0.008 },
-                'NON CONFORME': { ok: 0, cont: 0, vide: 0, objectif: 0.07 },
-                'LOUPÉ VISUEL / CQTV': { ok: 0, cont: 0, vide: 0, objectif: 1.40 }
+                'MAUVAISE': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.18 },
+                'LOUPÉ RÉDACTION': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.008 },
+                'NON CONFORME': { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.07 },
+                'LOUPÉ VISUEL / CQTV': { imputableO: 0, imputableN: 0, vide: 0, objectif: 1.40 }
             };
 
             let agentsCount = {};
@@ -611,10 +611,16 @@
                 const site = String(cols[5] || '').toUpperCase();         // Col F : Site
                 const dateDiffusion = String(cols[6] || '');              // Col G : Date de diffusion (pour le mois)
                 const mauvaiseVal = String(cols[10] || '');               // Col K : Mauvaise
-                const loupeVal = String(cols[11] || '');                  // Col L : Loupé
+                const loupeVal = String(cols[11] || '');                  // Col L : Loupé (CQTV = visuel, reste = rédaction)
                 const ncVal = String(cols[12] || '');                     // Col M : Non conforme
+                
+                // Col R (idx 17) : Imputable (O/N)
+                let imputableVal = '';
+                if (cols.length >= 18) {
+                    imputableVal = String(cols[17] || '').trim().toUpperCase();
+                }
 
-                // Recherche du débrief (O/N) dans les colonnes de droite
+                // Recherche du débrief (O/N)
                 let debriefVal = '';
                 for (let idx = 13; idx < cols.length; idx++) {
                     let val = String(cols[idx] || '').toUpperCase();
@@ -623,7 +629,7 @@
                     }
                 }
 
-                // Extraction rigoureuse du mois basé sur la Date de diffusion (Col G)
+                // Extraction du mois basé rigoureusement sur la Date de diffusion (Col G)
                 let moisLigne = '';
                 if (dateDiffusion.includes('/')) {
                     const p = dateDiffusion.split('/');
@@ -637,7 +643,7 @@
                 if (siteFiltre !== 'TOUS' && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
-                // Identification basée sur Colonnes K, L, M
+                // Identification de la catégorie via Colonnes K, L, M
                 let typeNQ = '';
                 let loupeLower = loupeVal.toLowerCase();
 
@@ -655,18 +661,21 @@
                     continue;
                 }
 
-                totalNQ++;
-                if (debriefVal.includes('O') || debriefVal.includes('OUI')) debriefsRealises++;
-                else nonDebriefs++;
+                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { imputableO: 0, imputableN: 0, vide: 0, objectif: 0.10 };
 
-                if (!statsCategories[typeNQ]) statsCategories[typeNQ] = { ok: 0, cont: 0, vide: 0, objectif: 0.10 };
-                
-                let statutValidation = String(cols[cols.length - 1] || '').toUpperCase();
-                if (statutValidation.includes('OK')) statsCategories[typeNQ].ok++;
-                else if (statutValidation.includes('CONTEST')) statsCategories[typeNQ].cont++;
-                else statsCategories[typeNQ].vide++;
+                // Comptabilisation stricte selon Col R (Imputable O / N / Vide)
+                if (imputableVal === 'O') {
+                    statsCategories[typeNQ].imputableO++;
+                    totalNQ++;
+                    if (debriefVal.includes('O') || debriefVal.includes('OUI')) debriefsRealises++;
+                    else nonDebriefs++;
+                    agentsCount[agent] = (agentsCount[agent] || 0) + 1;
+                } else if (imputableVal === 'N') {
+                    statsCategories[typeNQ].imputableN++;
+                } else {
+                    statsCategories[typeNQ].vide++; // Vide = en attente
+                }
 
-                agentsCount[agent] = (agentsCount[agent] || 0) + 1;
                 if (site.includes('TANA') || site.includes('ANTANANARIVO')) countTana++;
                 if (site.includes('DIEGO')) countDiego++;
             }
@@ -686,21 +695,21 @@
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage du tableau avec vos formules distinctes
+            // Remplissage du tableau avec les formules et ventilation Imputable O / N / Vide
             let tableCatHtml = '';
             let index = 1;
             let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
 
             for (let [cat, data] of Object.entries(statsCategories)) {
-                let totalCat = data.ok + data.cont + data.vide;
                 let tauxReelNum = 0;
 
+                // Calcul du taux basé uniquement sur les imputables 'O'
                 if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
-                    tauxReelNum = (totalCat / baseProd) * 100;
+                    tauxReelNum = (data.imputableO / baseProd) * 100;
                 } else if (cat === 'LOUPÉ RÉDACTION') {
-                    tauxReelNum = (totalCat / baseProd) * 10;
+                    tauxReelNum = (data.imputableO / baseProd) * 10;
                 } else if (cat === 'LOUPÉ VISUEL / CQTV') {
-                    tauxReelNum = (totalCat / baseProd) * 100;
+                    tauxReelNum = (data.imputableO / baseProd) * 100;
                 }
 
                 let tauxReelStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
@@ -719,9 +728,9 @@
 
                 tableCatHtml += `<tr class="${rowClass}">
                     <td><strong>${index++}. ${cat}</strong></td>
-                    <td>${data.ok}</td>
-                    <td>${data.cont}</td>
-                    <td>${data.vide}</td>
+                    <td><strong style="color:var(--success);">${data.imputableO}</strong></td>
+                    <td>${data.imputableN}</td>
+                    <td><span style="color:var(--warning);">${data.vide} (en attente)</span></td>
                     <td>Obj. ${objStr}</td>
                     <td><strong>${tauxReelStr}</strong></td>
                     <td>${statutHtml}</td>
