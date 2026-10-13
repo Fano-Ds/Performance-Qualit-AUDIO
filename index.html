@@ -583,10 +583,11 @@
 
             let agentsSet = new Set();
             
+            // Catégories avec objectifs précis et formules dédiées
             let statsCategories = {
                 'MAUVAISE': { imputableO: 0, vide: 0, objectif: 0.18 },
-                'LOUPÉ RÉDACTION': { imputableO: 0, vide: 0, objectif: 0.008 },
                 'NON CONFORME': { imputableO: 0, vide: 0, objectif: 0.07 },
+                'LOUPÉ RÉDACTION': { imputableO: 0, vide: 0, objectif: 0.008 },
                 'LOUPÉ VISUEL / CQTV': { imputableO: 0, vide: 0, objectif: 1.40 }
             };
 
@@ -668,7 +669,6 @@
                     });
                 }
 
-                // Si Imputable 'N', on ignore complètement cette ligne des calculs NQ
                 if (imputableVal === 'N') continue;
 
                 // Débrief (O/N)
@@ -678,7 +678,6 @@
                     if (u === 'O' || u === 'N' || u.includes('OUI') || u.includes('NON')) debriefVal = u;
                 });
 
-                // Mois (Date de diffusion)
                 let moisLigne = '';
                 if (dateDiffusion.includes('/')) {
                     const p = dateDiffusion.split('/');
@@ -708,7 +707,6 @@
                 if (site.includes('DIEGO')) countDiego++;
             }
 
-            // Liste agents
             const selectAgent = document.getElementById('filter-agent');
             const agentActuel = selectAgent.value;
             selectAgent.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -718,12 +716,10 @@
                 selectAgent.appendChild(opt);
             });
 
-            // KPIs
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = nonDebriefs;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage tableau catégories (sans la colonne Imputable N)
             let tableCatHtml = '';
             let index = 1;
             let baseProd = totalProductionLignes > 0 ? totalProductionLignes : 1;
@@ -731,11 +727,15 @@
             for (let [cat, data] of Object.entries(statsCategories)) {
                 let tauxReelNum = 0;
 
+                // Application stricte de vos formules spécifiques par indicateur
                 if (cat === 'MAUVAISE' || cat === 'NON CONFORME') {
+                    // nb de [cat] imputable / RMs envoyées * 100
                     tauxReelNum = (data.imputableO / baseProd) * 100;
                 } else if (cat === 'LOUPÉ RÉDACTION') {
-                    tauxReelNum = (data.imputableO / baseProd) * 10;
+                    // loupé rédaction imputable / alertes traitées * 100
+                    tauxReelNum = (data.imputableO / baseProd) * 100;
                 } else if (cat === 'LOUPÉ VISUEL / CQTV') {
+                    // nombre de loupé visuel / volume horaire * 100
                     tauxReelNum = (data.imputableO / baseProd) * 100;
                 }
 
@@ -764,12 +764,10 @@
             }
             document.getElementById('table-categories').innerHTML = tableCatHtml;
 
-            // Débriefs
             let pctDebrief = totalNQ > 0 ? Math.round((debriefsRealises / totalNQ) * 100) : 0;
             document.getElementById('pct-debrief-val').textContent = pctDebrief + '%';
             document.getElementById('bar-debrief-global').style.width = pctDebrief + '%';
 
-            // Agents (Flop NQ)
             let sortedAgents = Object.entries(agentsCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
             let agentHtml = '';
             for (let [ag, cnt] of sortedAgents) {
@@ -779,8 +777,15 @@
             }
             document.getElementById('agents-table-body').innerHTML = agentHtml || `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
 
-            // Sites
             let pctTana = totalNQ > 0 ? Math.round((countTana / totalNQ) * 100) : 0;
             let pctDiego = totalNQ > 0 ? Math.round((countDiego / totalNQ) * 100) : 0;
             document.getElementById('tana-val').textContent = countTana + ' NQ';
-            document.getElementById('tana-
+            document.getElementById('tana-pct').textContent = `Part : ${pctTana}%`;
+            document.getElementById('diego-val').textContent = countDiego + ' NQ';
+            document.getElementById('diego-pct').textContent = `Part : ${pctDiego}%`;
+
+            document.getElementById('alerte-rouge-texte').textContent = nonDebriefs > 0 ? `${nonDebriefs} ligne(s) non débriefée(s) nécessitent une action immédiate.` : 'Aucune alerte critique en cours.';
+        }
+    </script>
+</body>
+</html>
