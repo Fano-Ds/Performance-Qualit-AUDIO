@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quality Performance Center - Audio</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Inclusion de Chart.js pour le camembert et les graphiques -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -104,7 +103,7 @@
         .action-rouge { background: rgba(244, 63, 94, 0.1); border-color: var(--danger); }
         .action-orange { background: rgba(251, 191, 36, 0.1); border-color: var(--warning); }
         .action-verte { background: rgba(52, 211, 153, 0.1); border-color: var(--success); }
-        .action-tag { font-weight: 800; text-transform: uppercase; min-width: 130px; font-size: 11px; }
+        .action-tag { font-weight: 800; text-transform: uppercase; min-width: 150px; font-size: 11px; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media(max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -206,41 +205,36 @@
     </div>
 
     <div class="card-section">
-        <h2>Suivi par Catégorie & Retards de Production</h2>
+        <h2>Suivi détaillé par Sous-Catégorie de Constat</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Catégorie</th>
+                    <th>Sous-Catégorie (Détail Constat)</th>
                     <th>OK (Imputables O)</th>
                     <th>Vides (Non débriefés)</th>
-                    <th>Objectif</th>
-                    <th>Taux Réel</th>
-                    <th>Statut</th>
+                    <th>Type Principal</th>
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Synchronisation en attente...</td></tr>
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Synchronisation en attente...</td></tr>
             </tbody>
         </table>
     </div>
 
-    <!-- Plan d'action spécifique par catégorie et par niveau -->
     <div class="card-section">
-        <h2>Plan d'Action Spécifique par Catégorie & Indicateur</h2>
+        <h2>Plan d'Action Spécifique par Sous-Catégorie</h2>
         <div class="action-plan-container" id="container-plan-action">
             <div style="color: var(--text-muted); font-size: 12px;">En attente des données pour générer les actions ciblées...</div>
         </div>
     </div>
 
     <div class="grid-2">
-        <!-- Camembert Répartition par Site -->
         <div class="card-section">
             <h2>Répartition des Erreurs par Site</h2>
             <div class="chart-container">
                 <canvas id="chartSites"></canvas>
             </div>
         </div>
-        <!-- Top 5 Agents -->
         <div class="card-section">
             <h2>Agents à accompagner — Flop 5 NQ</h2>
             <table>
@@ -318,17 +312,9 @@
 
             const siteFiltre = document.getElementById('filter-site').value.toUpperCase();
             const agentFiltre = document.getElementById('filter-agent').value;
-            
-            const volRM = parseFloat(document.getElementById('vol-rm').value) || 1;
-            const volAlertes = parseFloat(document.getElementById('vol-alertes').value) || 1;
 
             let agentsSet = new Set();
-            let stats = {
-                'MAUVAISE': { ok: 0, vides: 0, obj: 0.0018, base: volRM },
-                'LOUPÉ': { ok: 0, vides: 0, obj: 0.00008, base: volAlertes },
-                'NON CONFORME': { ok: 0, vides: 0, obj: 0.0007, base: volRM },
-                'LOUPÉ VISUEL': { ok: 0, vides: 0, obj: 0.0140, base: volAlertes }
-            };
+            let subStats = {}; // Stocke les sous-catégories dynamiquement
 
             let totalNQ = 0, totalNonDebrief = 0, debriefsRealises = 0;
             let agentsMap = {};
@@ -346,28 +332,44 @@
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
                 agentsSet.add(agent);
 
-                // Détection élargie et souple des colonnes K, L, M
-                let colK = String(cols[10] || '').toLowerCase();
-                let colL = String(cols[11] || '').toLowerCase();
-                let colM = String(cols[12] || '').toLowerCase();
-                let typeNQ = '';
+                // Lecture exacte des colonnes de constats (K=10: Mauvaise, L=11: Loupé, M=12: Non conforme)
+                let colK = String(cols[10] || '').trim();
+                let colL = String(cols[11] || '').trim();
+                let colM = String(cols[12] || '').trim();
+                
+                let sousCat = '';
+                let typeParent = '';
 
-                if (colK.includes('mauvaise') || (colK && !colK.includes('rien'))) typeNQ = 'MAUVAISE';
-                else if (colL.includes('visuel') || colL.includes('cqtv')) typeNQ = 'LOUPÉ VISUEL';
-                else if (colL && !colL.includes('rien')) typeNQ = 'LOUPÉ';
-                else if (colM.includes('conforme') || (colM && !colM.includes('rien'))) typeNQ = 'NON CONFORME';
+                if (colK !== '' && !colK.toLowerCase().includes('rien')) {
+                    sousCat = colK;
+                    typeParent = 'MAUVAISE';
+                } else if (colL !== '' && !colL.toLowerCase().includes('rien')) {
+                    sousCat = colL;
+                    typeParent = 'LOUPÉ';
+                } else if (colM !== '' && !colM.toLowerCase().includes('rien')) {
+                    sousCat = colM;
+                    typeParent = 'NON CONFORME';
+                }
 
-                if (!typeNQ) continue;
+                if (!sousCat) continue;
 
                 let valP = String(cols[15] || '').trim().toUpperCase();
                 let valR = String(cols[17] || '').trim().toUpperCase();
 
-                if (valP === 'N') continue; // Exclu si non imputable
+                // Règle P = 'N' -> Non imputable, on exclut
+                if (valP === 'N') continue;
 
+                // Filtrage par Mois, Site, Agent
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
+                // Initialisation de la sous-catégorie si elle n'existe pas
+                if (!subStats[sousCat]) {
+                    subStats[sousCat] = { ok: 0, vides: 0, type: typeParent };
+                }
+
+                // Si P = 'O' (Imputable)
                 if (valP === 'O') {
                     totalNQ++;
                     agentsMap[agent] = (agentsMap[agent] || 0) + 1;
@@ -375,14 +377,13 @@
                     if (site.includes('TANA')) sitesMap['TANA']++;
                     else if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
-                    if (stats[typeNQ]) {
-                        if (valR === '' || valR === '0' || valR === 'NULL') {
-                            stats[typeNQ].vides++;
-                            totalNonDebrief++;
-                        } else {
-                            stats[typeNQ].ok++;
-                            debriefsRealises++;
-                        }
+                    // Règle Débrief (Colonne R)
+                    if (valR === '' || valR === '0' || valR === 'NULL') {
+                        subStats[sousCat].vides++;
+                        totalNonDebrief++;
+                    } else {
+                        subStats[sousCat].ok++;
+                        debriefsRealises++;
                     }
                 }
             }
@@ -402,56 +403,30 @@
             document.getElementById('kpi-non-debrief').textContent = totalNonDebrief;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Remplissage Tableau des Catégories & Plan d'Action ciblé
+            // Remplissage Tableau des Sous-Catégories & Plan d'Action
             let htmlTable = '';
             let htmlActionPlan = '';
             let idx = 1;
 
-            for (let [cat, data] of Object.entries(stats)) {
-                let totalCat = data.ok + data.vides;
-                let tauxReelNum = (totalCat / data.base) * 100;
-                let objPct = data.obj * 100;
-                let tauxStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
-                let objStr = 'Obj ' + objPct.toFixed(3).replace('.', ',') + ' %';
-
-                let statutClass = 'badge-tenu';
-                let statutText = 'Tenu';
-                let actionClass = 'action-verte';
-                let actionTexte = '';
-
-                if (tauxReelNum > objPct) {
-                    statutClass = 'badge-alerte';
-                    statutText = 'Dénoncé / Alerte';
-                    actionClass = 'action-rouge';
-                    if (cat === 'MAUVAISE') {
-                        actionTexte = `<strong>[ALERTE - MAUVAISE]</strong> : Rappel du process pas à pas, atelier flash sur les notions complexes et validation renforcée par les formateurs.`;
-                    } else if (cat === 'NON CONFORME') {
-                        actionTexte = `<strong>[ALERTE - NON CONFORME]</strong> : Relecture obligatoire avant validation, rappel des règles de montage/découpe et contrôle qualité renforcé.`;
-                    } else if (cat === 'LOUPÉ' || cat === 'LOUPÉ VISUEL') {
-                        actionTexte = `<strong>[ALERTE - ${cat}]</strong> : Lutte contre la précipitation, vérification minutieuse des mots-clés/bandeaux et accompagnement individualisé des profils fragiles.`;
-                    }
-                } else if (tauxReelNum >= (objPct * 0.8)) {
-                    statutClass = 'badge-vigilance';
-                    statutText = 'Vigilance';
-                    actionClass = 'action-orange';
-                    actionTexte = `<strong>[VIGILANCE - ${cat}]</strong> : Briefing de début de shift, rappel des objectifs et suivi hebdomadaire des écarts.`;
-                } else {
-                    actionTexte = `<strong>[TENU - ${cat}]</strong> : Maintenir le niveau de qualité actuel et encourager les bonnes pratiques.`;
-                }
+            for (let [cat, data] of Object.entries(subStats).sort((a,b) => (b[1].ok + b[1].vides) - (a[1].ok + a[1].vides))) {
+                let actionTexte = `<strong>[PLAN D'ACTION — ${cat}]</strong> : Rappel du process pas à pas, atelier flash sur les notions spécifiques et accompagnement renforcé sur cette typologie d'erreur.`;
 
                 htmlTable += `<tr>
                     <td><strong>${idx++}. ${cat}</strong></td>
                     <td><strong style="color:var(--success);">${data.ok}</strong></td>
                     <td><span style="color:var(--warning);">${data.vides}</span></td>
-                    <td>${objStr}</td>
-                    <td><strong>${tauxStr}</strong></td>
-                    <td><span class="status-badge ${statutClass}">${statutText}</span></td>
+                    <td><span class="status-badge" style="background:#1e293b; color:var(--primary);">${data.type}</span></td>
                 </tr>`;
 
-                htmlActionPlan += `<div class="action-row ${actionClass}">
+                htmlActionPlan += `<div class="action-row action-rouge">
                     <div class="action-tag">${cat}</div>
                     <div>${actionTexte}</div>
                 </div>`;
+            }
+
+            if (Object.keys(subStats).length === 0) {
+                htmlTable = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucune donnée pour cette période.</td></tr>';
+                htmlActionPlan = '<div style="color: var(--text-muted); font-size: 12px;">Aucune action requise.</div>';
             }
 
             document.getElementById('table-categories').innerHTML = htmlTable;
@@ -466,15 +441,13 @@
             });
             document.getElementById('table-flop5').innerHTML = flopHtml || '<tr><td colspan="3" style="text-align:center;">Aucune donnée agent</td></tr>';
 
-            // Camembert Répartition par Site (Chart.js)
+            // Camembert Sites
             mettreAJourCamembert(sitesMap['TANA'], sitesMap['DIEGO']);
         }
 
         function mettreAJourCamembert(tana, diego) {
             const ctx = document.getElementById('chartSites').getContext('2d');
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
