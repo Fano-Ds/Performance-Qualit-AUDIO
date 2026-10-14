@@ -285,19 +285,18 @@
         function extraireMois(str) {
             if (!str) return '';
             let s = String(str).toLowerCase().trim();
-            // Détection robuste des dates textuelles précises (ex: "jeudi 1 octobre 2026")
-            if (s.includes('janvier') || s.includes('-01-') || s.includes('/01/')) return '01';
-            if (s.includes('février') || s.includes('fevrier') || s.includes('-02-') || s.includes('/02/')) return '02';
-            if (s.includes('mars') || s.includes('-03-') || s.includes('/03/')) return '03';
-            if (s.includes('avril') || s.includes('-04-') || s.includes('/04/')) return '04';
-            if (s.includes('mai') || s.includes('-05-') || s.includes('/05/')) return '05';
-            if (s.includes('juin') || s.includes('-06-') || s.includes('/06/')) return '06';
-            if (s.includes('juillet') || s.includes('-07-') || s.includes('/07/')) return '07';
-            if (s.includes('août') || s.includes('aout') || s.includes('-08-') || s.includes('/08/')) return '08';
-            if (s.includes('septembre') || s.includes('-09-') || s.includes('/09/')) return '09';
-            if (s.includes('octobre') || s.includes('-10-') || s.includes('/10/')) return '10';
-            if (s.includes('novembre') || s.includes('-11-') || s.includes('/11/')) return '11';
-            if (s.includes('décembre') || s.includes('decembre') || s.includes('-12-') || s.includes('/12/')) return '12';
+            if (s.includes('janvier') || s.includes('/01/')) return '01';
+            if (s.includes('février') || s.includes('fevrier') || s.includes('/02/')) return '02';
+            if (s.includes('mars') || s.includes('/03/')) return '03';
+            if (s.includes('avril') || s.includes('/04/')) return '04';
+            if (s.includes('mai') || s.includes('/05/')) return '05';
+            if (s.includes('juin') || s.includes('/06/')) return '06';
+            if (s.includes('juillet') || s.includes('/07/')) return '07';
+            if (s.includes('août') || s.includes('aout') || s.includes('/08/')) return '08';
+            if (s.includes('septembre') || s.includes('/09/')) return '09';
+            if (s.includes('octobre') || s.includes('/10/')) return '10';
+            if (s.includes('novembre') || s.includes('/11/')) return '11';
+            if (s.includes('décembre') || s.includes('decembre') || s.includes('/12/')) return '12';
             return '';
         }
 
@@ -338,12 +337,12 @@
 
                 let agent = String(cols[4] || '').trim();
                 let site = String(cols[5] || '').toUpperCase();
-                let dateDiff = cols[6] || ''; // Date de diffusion
+                let dateDiff = cols[6] || ''; 
                 let moisLigne = extraireMois(dateDiff);
 
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
 
-                // --- CLASSEMENT MENSUEL STRICT PAR DATE DE DIFFUSION ---
+                // Filtrage strict par Mois de diffusion
                 if (moisActif !== 'toutes' && moisLigne !== moisActif) continue;
 
                 // Filtrage Site et Agent
@@ -351,20 +350,19 @@
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
                 // Lecture exacte des colonnes K (10), L (11), M (12)
-                let colK = String(cols[10] || '').trim();
-                let colL = String(cols[11] || '').trim();
-                let colM = String(cols[12] || '').trim();
+                let colK = String(cols[10] || '').trim().toLowerCase();
+                let colL = String(cols[11] || '').trim().toLowerCase();
+                let colM = String(cols[12] || '').trim().toLowerCase();
 
                 let typeNQ = '';
 
-                // Classification exclusive et précise par catégorie
+                // Classification ultra-souple pour capturer les textes exacts de votre Sheet
                 if (colK !== '') {
                     typeNQ = 'MAUVAISE';
                 } else if (colL !== '') {
-                    let lLower = colL.toLowerCase();
-                    if (lLower.includes('cqtv')) {
+                    if (colL.includes('cqtv')) {
                         typeNQ = 'LOUPÉ VISUEL (CQTV)';
-                    } else if (lLower.includes('mot-clé') || lLower.includes('loupé')) {
+                    } else if (colL.includes('mot-clé') || colL.includes('loupé')) {
                         typeNQ = 'LOUPÉ RÉDAC (MOT CLÉ)';
                     }
                 } else if (colM !== '') {
@@ -374,15 +372,15 @@
                 if (!typeNQ) continue;
 
                 let valP = String(cols[15] || '').trim().toUpperCase();
-                let valR = String(cols[17] || '').trim().toUpperCase(); // Colonne Débrief (ex: 'O')
+                let valR = String(cols[17] || '').trim().toUpperCase(); // Colonne Débrief
 
-                // Si P = 'N' -> Non imputable, on exclut
-                if (valP === 'N') continue;
+                // Si P est vide ou égal à 'N' (Non imputable), on exclut. S'il commence par 'O', on l'accepte !
+                if (valP.startsWith('N')) continue;
 
                 agentsSet.add(agent);
 
-                // Si P = 'O' (Imputable)
-                if (valP === 'O') {
+                // Si Imputable (commence par 'O' ou vaut 'O')
+                if (valP.startsWith('O') || valP === 'O') {
                     totalNQ++;
                     agentsMap[agent] = (agentsMap[agent] || 0) + 1;
 
@@ -390,7 +388,8 @@
                     else if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
                     if (stats[typeNQ]) {
-                        // Règle Débrief : Si R est vide -> Non débriefé (vides). Sinon ('O') -> OK
+                        // Règle Débrief : Si R est vide, '0' ou NULL -> Non débriefé (vides). 
+                        // Dès que R contient 'O' (ou commence par 'O'), c'est un débrief réalisé (OK) !
                         if (valR === '' || valR === '0' || valR === 'NULL') {
                             stats[typeNQ].vides++;
                             totalNonDebrief++;
@@ -473,15 +472,13 @@
             document.getElementById('container-plan-action').innerHTML = htmlActionPlan;
 
             // Top 5 Agents
-            let flopHtml = '';
-            let sortedAgents = Object.entries(agentsMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            let flopHtml = '', sortedAgents = Object.entries(agentsMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             sortedAgents.forEach(([ag, count]) => {
                 let badge = count > 5 ? '<span class="status-badge badge-alerte">Critique</span>' : '<span class="status-badge badge-vigilance">À surveiller</span>';
                 flopHtml += `<tr><td>${ag}</td><td><strong>${count}</strong></td><td>${badge}</td></tr>`;
             });
             document.getElementById('table-flop5').innerHTML = flopHtml || '<tr><td colspan="3" style="text-align:center;">Aucune donnée agent</td></tr>';
 
-            // Camembert Répartition par Site
             mettreAJourCamembert(sitesMap['TANA'], sitesMap['DIEGO']);
         }
 
