@@ -119,16 +119,12 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
-    <!-- Synchronisation & Import -->
+    <!-- Synchronisation Apps Script -->
     <div class="sync-panel">
-        <h3>🔗 Synchronisation Automatique & Fichier de Suivi</h3>
+        <h3>🔗 Synchronisation Automatique (Google Apps Script)</h3>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <span id="sync-status" style="font-size: 12px; color: var(--warning);">Prêt pour la synchronisation...</span>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-sync" onclick="chargerDonneesDistant()">🔄 Synchroniser Google Sheet</button>
-                <input type="file" id="file-input" style="display:none" accept=".xlsx, .xls, .csv" onchange="importerFichierLocal(event)">
-                <button class="btn-sync" style="background: #334155; color: #fff;" onclick="document.getElementById('file-input').click()">📂 Importer Fichier</button>
-            </div>
+            <button class="btn-sync" onclick="synchroniserAppsScript()">🔄 Synchroniser les Données</button>
         </div>
     </div>
 
@@ -224,7 +220,7 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Synchronisez ou importez un fichier pour afficher les données...</td></tr>
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Synchronisation en attente...</td></tr>
             </tbody>
         </table>
     </div>
@@ -234,7 +230,7 @@
         <div class="alert-box">
             <div class="alert-row alert-rouge">
                 <span>Alerte Critique</span>
-                <span id="texte-alerte-rouge">En attente de données.</span>
+                <span id="texte-alerte-rouge">En attente de synchronisation.</span>
             </div>
             <div class="alert-row alert-orange">
                 <span>Alerte Orange (Vigilance)</span>
@@ -250,7 +246,7 @@
     <div class="grid-2">
         <div class="card-section">
             <h2>NQ par Site (Mois sélectionné)</h2>
-            <div id="stats-sites" style="font-size: 13px; color: var(--text-muted);">En attente de synchronisation...</div>
+            <div id="stats-sites" style="font-size: 13px; color: var(--text-muted);">Synchronisez pour voir la répartition TANA / DIEGO.</div>
         </div>
         <div class="card-section">
             <h2>Agents à accompagner — Flop 5 NQ</h2>
@@ -274,66 +270,27 @@
         let moisActif = '10';
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
-        const sheetID = "1G2kFdKem-Ex41G0Ig2Su-jNepB0Re-jdRC0FgfO1eWg";
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=csv`;
+        // URL de votre Web App Google Apps Script
+        const appsScriptUrl = "https://script.google.com/macros/s/AKfycbxPUIw7wKJAso6oFLvLYeUwEwQPWqAQU-xEs9--YBt8XqDQkfRse75Mrga59Nzdcss/exec";
 
-        async function chargerDonneesDistant() {
+        async function synchroniserAppsScript() {
             const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = "Tentative de synchronisation en cours...";
+            statusEl.textContent = "Connexion au Google Sheet via Apps Script...";
             statusEl.style.color = "var(--warning)";
 
             try {
-                // Utilisation d'un proxy CORS public transparent pour contourner le blocage du navigateur
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Erreur réseau");
-                const text = await response.text();
+                const response = await fetch(appsScriptUrl);
+                if (!response.ok) throw new Error("Erreur de connexion Apps Script");
                 
-                donneesGlobales = parseCSV(text);
-                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées.`;
+                donneesGlobales = await response.json();
+                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées en direct.`;
                 statusEl.style.color = "var(--success)";
                 rafraichirDashboard();
             } catch (err) {
-                statusEl.textContent = "Mode direct restreint. Utilisez le bouton '📂 Importer Fichier' ci-contre.";
+                console.error(err);
+                statusEl.textContent = "Erreur : Vérifiez que l'accès à l'application web est bien ouvert à 'Tout le monde'.";
                 statusEl.style.color = "var(--danger)";
             }
-        }
-
-        function importerFichierLocal(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            document.getElementById('sync-status').textContent = `Fichier chargé : ${file.name}`;
-            document.getElementById('sync-status').style.color = "var(--success)";
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                donneesGlobales = XLSX.utils.sheet_to_json(sheet, {header: 1});
-                rafraichirDashboard();
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function parseCSV(text) {
-            let lines = text.split('\n');
-            let result = [];
-            for(let i=0; i<lines.length; i++) {
-                let row = [];
-                let inSub = false;
-                let curVal = '';
-                let line = lines[i];
-                for(let j=0; j<line.length; j++) {
-                    let c = line[j];
-                    if(c === '"') { inSub = !inSub; }
-                    else if(c === ',' && !inSub) { row.push(curVal.trim()); curVal = ''; }
-                    else { curVal += c; }
-                }
-                row.push(curVal.trim());
-                result.push(row);
-            }
-            return result;
         }
 
         function extraireMois(str) {
@@ -499,8 +456,9 @@
             `;
         }
 
+        // Lancement automatique de la synchronisation au chargement de la page
         window.onload = function() {
-            chargerDonneesDistant();
+            synchroniserAppsScript();
         };
     </script>
 </body>
