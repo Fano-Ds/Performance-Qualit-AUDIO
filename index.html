@@ -287,7 +287,6 @@
             if (!str) return '';
             let s = String(str).toLowerCase().trim();
             
-            // Détection robuste des mois textuels (ex: "jeudi 1 octobre 2026")
             if (s.includes('janvier')) return '01';
             if (s.includes('février') || s.includes('fevrier')) return '02';
             if (s.includes('mars')) return '03';
@@ -324,13 +323,18 @@
 
             let agentsSet = new Set();
             
-            // Les 4 grands blocs fixes avec leurs objectifs
             let stats = {
                 'MAUVAISE': { ok: 0, vides: 0, obj: 0.0018, base: volRM },
                 'LOUPÉ RÉDAC (MOT CLÉ)': { ok: 0, vides: 0, obj: 0.00008, base: volAlertes },
                 'LOUPÉ VISUEL (CQTV)': { ok: 0, vides: 0, obj: 0.0140, base: volAlertes },
                 'NON CONFORME': { ok: 0, vides: 0, obj: 0.0007, base: volRM }
             };
+
+            // Listes exactes des options des menus déroulants
+            const listMauvaise = ['contenu non éligible', 'doublon', 'appellation citée', 'conditions particulières', 'lire sur', 'passage significatif', 'rien sur', 'uniquement sur', 'mauvais choix de classement'];
+            const listLoupeRedac = ['loupé mot-clé', 'retard prod'];
+            const listLoupeVisuel = ['cqtv'];
+            const listNonConforme = ['rm infidèle à l'information', 'client non cité dans l'alerte', 'erreur rédaction', 'erreur bornage', 'rm time codée'];
 
             let totalNQ = 0, totalNonDebrief = 0, debriefsRealises = 0;
             let agentsMap = {};
@@ -342,7 +346,7 @@
 
                 let agent = String(cols[4] || '').trim();
                 let site = String(cols[5] || '').toUpperCase();
-                let dateDiff = cols[6] || ''; // Date de diffusion
+                let dateDiff = cols[6] || ''; 
                 let moisLigne = extraireMois(dateDiff);
 
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
@@ -354,20 +358,14 @@
 
                 let typeNQ = '';
 
-                // 1. Règle MAUVAISE
-                if (colK !== '' && !colK.includes('rien')) {
+                // Validation stricte par correspondance exacte avec les listes déroulantes
+                if (listMauvaise.some(item => colK.includes(item))) {
                     typeNQ = 'MAUVAISE';
-                }
-                // 2. Règle LOUPÉ VISUEL (CQTV)
-                else if (colL.includes('cqtv')) {
+                } else if (listLoupeVisuel.some(item => colL.includes(item))) {
                     typeNQ = 'LOUPÉ VISUEL (CQTV)';
-                }
-                // 3. Règle LOUPÉ RÉDAC (mot clé / retard prod)
-                else if (colL !== '' && !colL.includes('rien')) {
+                } else if (listLoupeRedac.some(item => colL.includes(item))) {
                     typeNQ = 'LOUPÉ RÉDAC (MOT CLÉ)';
-                }
-                // 4. Règle NON CONFORME
-                else if (colM !== '' && !colM.includes('rien')) {
+                } else if (listNonConforme.some(item => colM.includes(item))) {
                     typeNQ = 'NON CONFORME';
                 }
 
