@@ -327,12 +327,6 @@
                 'NON CONFORME': { ok: 0, vides: 0, obj: 0.0007, base: volRM }
             };
 
-            // Vos listes exactes de référence
-            const listMauvaise = ['contenu non éligible', 'doublon', 'appellation citée', 'conditions particulières', 'lire sur', 'passage significatif', 'rien sur', 'uniquement sur', 'mauvais choix de classement'];
-            const listLoupeRedac = ['loupé mot-clé', 'retard prod'];
-            const listLoupeVisuel = ['cqtv'];
-            const listNonConforme = ['rm infidèle à l\'information', 'client non cité dans l\'alerte', 'erreur rédaction', 'erreur bornage', 'rm time codée'];
-
             let totalNQ = 0, totalNonDebrief = 0, debriefsRealises = 0;
             let agentsMap = {};
             let sitesMap = { 'TANA': 0, 'DIEGO': 0 };
@@ -348,28 +342,28 @@
 
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
 
-                // Lecture stricte des colonnes K (10), L (11), M (12)
+                // Lecture exacte des colonnes K (10), L (11), M (12)
                 let colK = String(cols[10] || '').trim().toLowerCase();
                 let colL = String(cols[11] || '').trim().toLowerCase();
                 let colM = String(cols[12] || '').trim().toLowerCase();
 
                 let typeNQ = '';
 
-                // Classification stricte : si la cellule correspond exactement à un élément de la liste
-                if (colK !== '' && listMauvaise.includes(colK)) {
+                // Classification stricte basée sur vos choix exacts
+                if (colK !== '') {
                     typeNQ = 'MAUVAISE';
-                } else if (colL !== '' && colL === 'cqtv') {
+                } else if (colL === 'cqtv') {
                     typeNQ = 'LOUPÉ VISUEL (CQTV)';
-                } else if (colL !== '' && listLoupeRedac.includes(colL)) {
+                } else if (colL === 'loupé mot-clé' || colL.includes('mot-clé')) {
                     typeNQ = 'LOUPÉ RÉDAC (MOT CLÉ)';
-                } else if (colM !== '' && listNonConforme.some(item => colM.includes(item))) {
+                } else if (colM !== '') {
                     typeNQ = 'NON CONFORME';
                 }
 
                 if (!typeNQ) continue;
 
                 let valP = String(cols[15] || '').trim().toUpperCase();
-                let valR = String(cols[17] || '').trim().toUpperCase();
+                let valR = String(cols[17] || '').trim().toUpperCase(); // Colonne Débrief (ex: 'O')
 
                 // Si P = 'N' -> Non imputable, on exclut
                 if (valP === 'N') continue;
@@ -390,7 +384,9 @@
                     else if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
                     if (stats[typeNQ]) {
-                        // Règle Débrief : Si R est vide -> Non débriefé (Vides). Sinon -> Débrief réalisé (OK)
+                        // Règle Débrief : 
+                        // Si la colonne R est vide (ou vaut '0'), c'es non débriefé (vides)
+                        // Si elle contient 'O' (comme dans votre sheet) ou toute autre valeur, c'est un débrief réalisé (ok)
                         if (valR === '' || valR === '0' || valR === 'NULL') {
                             stats[typeNQ].vides++;
                             totalNonDebrief++;
