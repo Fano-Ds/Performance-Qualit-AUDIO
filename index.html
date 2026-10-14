@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quality Performance Center - Audio</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-main: #0b1329;
@@ -118,12 +119,16 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
-    <!-- Synchronisation Google Sheet -->
+    <!-- Synchronisation & Import -->
     <div class="sync-panel">
-        <h3>🔗 Synchronisation Automatique (Google Sheet : Base PPQ Dash Au)</h3>
+        <h3>🔗 Synchronisation Automatique & Fichier de Suivi</h3>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <span id="sync-status" style="font-size: 12px; color: var(--warning);">Cliquez sur synchroniser pour charger les données en direct...</span>
-            <button class="btn-sync" onclick="synchroniserGoogleSheet()">🔄 Synchroniser les Données</button>
+            <span id="sync-status" style="font-size: 12px; color: var(--warning);">Prêt pour la synchronisation...</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-sync" onclick="chargerDonneesDistant()">🔄 Synchroniser Google Sheet</button>
+                <input type="file" id="file-input" style="display:none" accept=".xlsx, .xls, .csv" onchange="importerFichierLocal(event)">
+                <button class="btn-sync" style="background: #334155; color: #fff;" onclick="document.getElementById('file-input').click()">📂 Importer Fichier</button>
+            </div>
         </div>
     </div>
 
@@ -219,7 +224,7 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Cliquez sur "Synchroniser les Données" ci-dessus...</td></tr>
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Synchronisez ou importez un fichier pour afficher les données...</td></tr>
             </tbody>
         </table>
     </div>
@@ -229,7 +234,7 @@
         <div class="alert-box">
             <div class="alert-row alert-rouge">
                 <span>Alerte Critique</span>
-                <span id="texte-alerte-rouge">En attente de synchronisation.</span>
+                <span id="texte-alerte-rouge">En attente de données.</span>
             </div>
             <div class="alert-row alert-orange">
                 <span>Alerte Orange (Vigilance)</span>
@@ -245,7 +250,7 @@
     <div class="grid-2">
         <div class="card-section">
             <h2>NQ par Site (Mois sélectionné)</h2>
-            <div id="stats-sites" style="font-size: 13px; color: var(--text-muted);">Synchronisez le Google Sheet pour voir la répartition TANA / DIEGO.</div>
+            <div id="stats-sites" style="font-size: 13px; color: var(--text-muted);">En attente de synchronisation...</div>
         </div>
         <div class="card-section">
             <h2>Agents à accompagner — Flop 5 NQ</h2>
@@ -266,32 +271,49 @@
 
     <script>
         let donneesGlobales = [];
+        let moisActif = '10';
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
-        // URL d'export CSV public de votre Google Sheet
         const sheetID = "1G2kFdKem-Ex41G0Ig2Su-jNepB0Re-jdRC0FgfO1eWg";
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=csv`;
 
-        async function synchroniserGoogleSheet() {
+        async function chargerDonneesDistant() {
             const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = "Chargement en cours depuis le Google Sheet...";
-            statusEl.style.color = var(--warning);
+            statusEl.textContent = "Tentative de synchronisation en cours...";
+            statusEl.style.color = "var(--warning)";
 
             try {
-                const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error("Erreur de récupération du Google Sheet (Vérifiez le partage public en lecture).");
-                const csvText = await response.text();
+                // Utilisation d'un proxy CORS public transparent pour contourner le blocage du navigateur
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Erreur réseau");
+                const text = await response.text();
                 
-                // Parse CSV simple
-                donneesGlobales = parseCSV(csvText);
-                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées en direct.`;
+                donneesGlobales = parseCSV(text);
+                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées.`;
                 statusEl.style.color = "var(--success)";
                 rafraichirDashboard();
             } catch (err) {
-                console.error(err);
-                statusEl.textContent = "Erreur de sync : Assurez-vous que le Google Sheet est partagé en 'Public' ou 'Tous les utilisateurs disposant du lien'.";
+                statusEl.textContent = "Mode direct restreint. Utilisez le bouton '📂 Importer Fichier' ci-contre.";
                 statusEl.style.color = "var(--danger)";
             }
+        }
+
+        function importerFichierLocal(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('sync-status').textContent = `Fichier chargé : ${file.name}`;
+            document.getElementById('sync-status').style.color = "var(--success)";
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                donneesGlobales = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                rafraichirDashboard();
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function parseCSV(text) {
@@ -304,14 +326,9 @@
                 let line = lines[i];
                 for(let j=0; j<line.length; j++) {
                     let c = line[j];
-                    if(c === '"') {
-                        inSub = !inSub;
-                    } else if(c === ',' && !inSub) {
-                        row.push(curVal.trim());
-                        curVal = '';
-                    } else {
-                        curVal += c;
-                    }
+                    if(c === '"') { inSub = !inSub; }
+                    else if(c === ',' && !inSub) { row.push(curVal.trim()); curVal = ''; }
+                    else { curVal += c; }
                 }
                 row.push(curVal.trim());
                 result.push(row);
@@ -346,8 +363,6 @@
         }
         function changerPeriodeSelect(val) { moisActif = val; rafraichirDashboard(); }
 
-        let moisActif = '10';
-
         function rafraichirDashboard() {
             if (!donneesGlobales.length) return;
 
@@ -373,16 +388,14 @@
                 const cols = donneesGlobales[i];
                 if (!cols || cols.length < 18) continue;
 
-                // Index basés sur votre Google Sheet :
-                let agent = String(cols[4] || '').trim(); // Col E
-                let site = String(cols[5] || '').toUpperCase(); // Col F
-                let dateDiff = cols[6] || ''; // Col G
-                let moisLigne = extraireMois(dateDiff) || extraireMois(cols[3]); // Col D (Mois)
+                let agent = String(cols[4] || '').trim();
+                let site = String(cols[5] || '').toUpperCase();
+                let dateDiff = cols[6] || '';
+                let moisLigne = extraireMois(dateDiff) || extraireMois(cols[3]);
 
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
                 agentsSet.add(agent);
 
-                // Catégories (Colonnes K, L, M -> index 10, 11, 12)
                 let colK = String(cols[10] || '');
                 let colL = String(cols[11] || '');
                 let colM = String(cols[12] || '');
@@ -395,14 +408,11 @@
 
                 if (!typeNQ) continue;
 
-                // Imputabilité (Col P -> index 15) et Débrief (Col R -> index 17)
                 let valP = String(cols[15] || '').trim().toUpperCase();
                 let valR = String(cols[17] || '').trim().toUpperCase();
 
-                // Si P = 'N' -> Exclu
                 if (valP === 'N') continue;
 
-                // Application des filtres
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
@@ -414,7 +424,6 @@
                     if (site.includes('TANA')) sitesMap['TANA']++;
                     if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
-                    // Si R est vide -> Non débriefé (Vides)
                     if (valR === '' || valR === '0' || valR === 'NULL') {
                         stats[typeNQ].vides++;
                         totalNonDebrief++;
@@ -425,7 +434,6 @@
                 }
             }
 
-            // Maj menu déroulant des agents
             const agentSelect = document.getElementById('filter-agent');
             const currentAgent = agentSelect.value;
             agentSelect.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -435,12 +443,10 @@
                 agentSelect.appendChild(opt);
             });
 
-            // Affichage KPIs
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = totalNonDebrief;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
-            // Tableau Catégories
             let htmlTable = '';
             let idx = 1;
             for (let [cat, data] of Object.entries(stats)) {
@@ -472,12 +478,10 @@
             }
             document.getElementById('table-categories').innerHTML = htmlTable;
 
-            // Alerte Rouge
             document.getElementById('texte-alerte-rouge').textContent = totalNonDebrief > 0 
-                ? `${totalNonDebrief} dossier(s) en attente de débrief (P=O, R=Vide) nécessitent une action immédiate.` 
+                ? `${totalNonDebrief} dossier(s) en attente de débrief (P=O, R=Vide).` 
                 : 'Aucun dossier en attente de débrief.';
 
-            // Flop 5 Agents
             let flopHtml = '';
             let sortedAgents = Object.entries(agentsMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             sortedAgents.forEach(([ag, count]) => {
@@ -486,7 +490,6 @@
             });
             document.getElementById('table-flop5').innerHTML = flopHtml || '<tr><td colspan="3" style="text-align:center;">Aucune donnée agent</td></tr>';
 
-            // Répartition sites
             let totalSites = sitesMap['TANA'] + sitesMap['DIEGO'] || 1;
             let tanaPct = Math.round((sitesMap['TANA'] / totalSites) * 100);
             let diegoPct = Math.round((sitesMap['DIEGO'] / totalSites) * 100);
@@ -496,9 +499,8 @@
             `;
         }
 
-        // Lancement auto au chargement de la page
         window.onload = function() {
-            synchroniserGoogleSheet();
+            chargerDonneesDistant();
         };
     </script>
 </body>
