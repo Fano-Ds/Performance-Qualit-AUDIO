@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quality Performance Center - Audio</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Inclusion de Chart.js pour le camembert et les graphiques -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-main: #0b1329;
@@ -93,20 +94,21 @@
         td { padding: 12px 8px; border-bottom: 1px solid var(--border-color); font-weight: 500; }
         tbody tr:hover { background-color: var(--table-hover); }
 
-        .row-non-conforme { background-color: rgba(244, 63, 94, 0.2) !important; border-left: 4px solid var(--danger); }
         .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
         .badge-tenu { background: #064e3b; color: #34d399; }
         .badge-alerte { background: #7f1d1d; color: #fca5a5; }
         .badge-vigilance { background: #78350f; color: #fde68a; }
 
-        .alert-box { display: flex; flex-direction: column; gap: 8px; }
-        .alert-row { display: flex; align-items: center; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; gap: 15px; }
-        .alert-rouge { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--danger); color: #fca5a5; }
-        .alert-orange { background: rgba(251, 191, 36, 0.15); border: 1px solid var(--warning); color: #fde68a; }
-        .alert-verte { background: rgba(52, 211, 153, 0.15); border: 1px solid var(--success); color: #34d399; }
+        .action-plan-container { display: flex; flex-direction: column; gap: 10px; }
+        .action-row { display: flex; align-items: flex-start; padding: 12px 15px; border-radius: 8px; font-size: 12px; gap: 15px; border-left: 5px solid; }
+        .action-rouge { background: rgba(244, 63, 94, 0.1); border-color: var(--danger); }
+        .action-orange { background: rgba(251, 191, 36, 0.1); border-color: var(--warning); }
+        .action-verte { background: rgba(52, 211, 153, 0.1); border-color: var(--success); }
+        .action-tag { font-weight: 800; text-transform: uppercase; min-width: 130px; font-size: 11px; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media(max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+        .chart-container { position: relative; height: 220px; width: 100%; display: flex; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
@@ -119,7 +121,6 @@
         <img src="https://admvalue.com/app/uploads/2024/03/logo-tbh.jpg" alt="Logo ADM Value" class="header-logo">
     </header>
 
-    <!-- Synchronisation Apps Script -->
     <div class="sync-panel">
         <h3>🔗 Synchronisation Automatique (Google Apps Script)</h3>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -128,9 +129,8 @@
         </div>
     </div>
 
-    <!-- Paramétrage des volumes -->
     <div class="volume-panel">
-        <h3>📊 Paramétrage des Volumes de Production (Pour calcul des taux réels)</h3>
+        <h3>📊 Paramétrage des Volumes de Production</h3>
         <div class="volume-grid">
             <div class="volume-item">
                 <label>Nombre de RMs Envoyées / Produites :</label>
@@ -212,7 +212,6 @@
                 <tr>
                     <th>Catégorie</th>
                     <th>OK (Imputables O)</th>
-                    <th>Contestations</th>
                     <th>Vides (Non débriefés)</th>
                     <th>Objectif</th>
                     <th>Taux Réel</th>
@@ -220,34 +219,28 @@
                 </tr>
             </thead>
             <tbody id="table-categories">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Synchronisation en attente...</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Synchronisation en attente...</td></tr>
             </tbody>
         </table>
     </div>
 
+    <!-- Plan d'action spécifique par catégorie et par niveau -->
     <div class="card-section">
-        <h2>Plan d'Action (3 Niveaux d'Alerte)</h2>
-        <div class="alert-box">
-            <div class="alert-row alert-rouge">
-                <span>Alerte Critique</span>
-                <span id="texte-alerte-rouge">En attente de synchronisation.</span>
-            </div>
-            <div class="alert-row alert-orange">
-                <span>Alerte Orange (Vigilance)</span>
-                <span>Suivi régulier requis sur les volumes de production.</span>
-            </div>
-            <div class="alert-row alert-verte">
-                <span>Alerte Verte (Tenu)</span>
-                <span>Les indicateurs de qualité sont conformes aux objectifs fixés.</span>
-            </div>
+        <h2>Plan d'Action Spécifique par Catégorie & Indicateur</h2>
+        <div class="action-plan-container" id="container-plan-action">
+            <div style="color: var(--text-muted); font-size: 12px;">En attente des données pour générer les actions ciblées...</div>
         </div>
     </div>
 
     <div class="grid-2">
+        <!-- Camembert Répartition par Site -->
         <div class="card-section">
-            <h2>NQ par Site (Mois sélectionné)</h2>
-            <div id="stats-sites" style="font-size: 13px; color: var(--text-muted);">Synchronisez pour voir la répartition TANA / DIEGO.</div>
+            <h2>Répartition des Erreurs par Site</h2>
+            <div class="chart-container">
+                <canvas id="chartSites"></canvas>
+            </div>
         </div>
+        <!-- Top 5 Agents -->
         <div class="card-section">
             <h2>Agents à accompagner — Flop 5 NQ</h2>
             <table>
@@ -268,27 +261,27 @@
     <script>
         let donneesGlobales = [];
         let moisActif = '10';
+        let chartInstance = null;
+
         document.getElementById('current-datetime').innerText = new Date().toLocaleDateString('fr-FR') + ' — ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
 
-        // URL de votre Web App Google Apps Script
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbxPUIw7wKJAso6oFLvLYeUwEwQPWqAQU-xEs9--YBt8XqDQkfRse75Mrga59Nzdcss/exec";
 
         async function synchroniserAppsScript() {
             const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = "Connexion au Google Sheet via Apps Script...";
+            statusEl.textContent = "Connexion au Google Sheet...";
             statusEl.style.color = "var(--warning)";
 
             try {
                 const response = await fetch(appsScriptUrl);
-                if (!response.ok) throw new Error("Erreur de connexion Apps Script");
-                
+                if (!response.ok) throw new Error("Erreur réseau");
                 donneesGlobales = await response.json();
-                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées en direct.`;
+                statusEl.textContent = `Succès : ${donneesGlobales.length} lignes synchronisées.`;
                 statusEl.style.color = "var(--success)";
                 rafraichirDashboard();
             } catch (err) {
                 console.error(err);
-                statusEl.textContent = "Erreur : Vérifiez que l'accès à l'application web est bien ouvert à 'Tout le monde'.";
+                statusEl.textContent = "Erreur de synchro. Vérifiez le déploiement Apps Script.";
                 statusEl.style.color = "var(--danger)";
             }
         }
@@ -331,10 +324,10 @@
 
             let agentsSet = new Set();
             let stats = {
-                'MAUVAISE': { ok: 0, contestations: 0, vides: 0, obj: 0.0018, base: volRM },
-                'LOUPÉ': { ok: 0, contestations: 0, vides: 0, obj: 0.00008, base: volAlertes },
-                'NON CONFORME': { ok: 0, contestations: 0, vides: 0, obj: 0.0007, base: volRM },
-                'LOUPÉ VISUEL': { ok: 0, contestations: 0, vides: 0, obj: 0.0140, base: volAlertes }
+                'MAUVAISE': { ok: 0, vides: 0, obj: 0.0018, base: volRM },
+                'LOUPÉ': { ok: 0, vides: 0, obj: 0.00008, base: volAlertes },
+                'NON CONFORME': { ok: 0, vides: 0, obj: 0.0007, base: volRM },
+                'LOUPÉ VISUEL': { ok: 0, vides: 0, obj: 0.0140, base: volAlertes }
             };
 
             let totalNQ = 0, totalNonDebrief = 0, debriefsRealises = 0;
@@ -353,22 +346,23 @@
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
                 agentsSet.add(agent);
 
-                let colK = String(cols[10] || '');
-                let colL = String(cols[11] || '');
-                let colM = String(cols[12] || '');
+                // Détection élargie et souple des colonnes K, L, M
+                let colK = String(cols[10] || '').toLowerCase();
+                let colL = String(cols[11] || '').toLowerCase();
+                let colM = String(cols[12] || '').toLowerCase();
                 let typeNQ = '';
 
-                if (colK && !/rien/i.test(colK)) typeNQ = 'MAUVAISE';
-                else if (colL && /visuel|cqtv/i.test(colL)) typeNQ = 'LOUPÉ VISUEL';
-                else if (colL && !/rien/i.test(colL)) typeNQ = 'LOUPÉ';
-                else if (colM && !/rien/i.test(colM)) typeNQ = 'NON CONFORME';
+                if (colK.includes('mauvaise') || (colK && !colK.includes('rien'))) typeNQ = 'MAUVAISE';
+                else if (colL.includes('visuel') || colL.includes('cqtv')) typeNQ = 'LOUPÉ VISUEL';
+                else if (colL && !colL.includes('rien')) typeNQ = 'LOUPÉ';
+                else if (colM.includes('conforme') || (colM && !colM.includes('rien'))) typeNQ = 'NON CONFORME';
 
                 if (!typeNQ) continue;
 
                 let valP = String(cols[15] || '').trim().toUpperCase();
                 let valR = String(cols[17] || '').trim().toUpperCase();
 
-                if (valP === 'N') continue;
+                if (valP === 'N') continue; // Exclu si non imputable
 
                 if (moisActif !== 'toutes' && moisLigne && moisLigne !== moisActif) continue;
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
@@ -379,18 +373,21 @@
                     agentsMap[agent] = (agentsMap[agent] || 0) + 1;
 
                     if (site.includes('TANA')) sitesMap['TANA']++;
-                    if (site.includes('DIEGO')) sitesMap['DIEGO']++;
+                    else if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
-                    if (valR === '' || valR === '0' || valR === 'NULL') {
-                        stats[typeNQ].vides++;
-                        totalNonDebrief++;
-                    } else {
-                        stats[typeNQ].ok++;
-                        debriefsRealises++;
+                    if (stats[typeNQ]) {
+                        if (valR === '' || valR === '0' || valR === 'NULL') {
+                            stats[typeNQ].vides++;
+                            totalNonDebrief++;
+                        } else {
+                            stats[typeNQ].ok++;
+                            debriefsRealises++;
+                        }
                     }
                 }
             }
 
+            // MAJ Sélecteur agents
             const agentSelect = document.getElementById('filter-agent');
             const currentAgent = agentSelect.value;
             agentSelect.innerHTML = '<option value="tous">Tous les agents</option>';
@@ -400,45 +397,67 @@
                 agentSelect.appendChild(opt);
             });
 
+            // Affichage KPIs
             document.getElementById('kpi-nq').textContent = totalNQ;
             document.getElementById('kpi-non-debrief').textContent = totalNonDebrief;
             document.getElementById('kpi-debrief').textContent = debriefsRealises;
 
+            // Remplissage Tableau des Catégories & Plan d'Action ciblé
             let htmlTable = '';
+            let htmlActionPlan = '';
             let idx = 1;
+
             for (let [cat, data] of Object.entries(stats)) {
                 let totalCat = data.ok + data.vides;
                 let tauxReelNum = (totalCat / data.base) * 100;
                 let objPct = data.obj * 100;
-                let tauxStr = tauxReelNum.toFixed(2).replace('.', ',') + ' %';
-                let objStr = 'Obj ' + objPct.toFixed(2).replace('.', ',') + ' %';
+                let tauxStr = tauxReelNum.toFixed(3).replace('.', ',') + ' %';
+                let objStr = 'Obj ' + objPct.toFixed(3).replace('.', ',') + ' %';
 
                 let statutClass = 'badge-tenu';
                 let statutText = 'Tenu';
-                let rowClass = '';
+                let actionClass = 'action-verte';
+                let actionTexte = '';
 
                 if (tauxReelNum > objPct) {
                     statutClass = 'badge-alerte';
-                    statutText = 'Alerte';
-                    if (cat === 'NON CONFORME') rowClass = 'row-non-conforme';
+                    statutText = 'Dénoncé / Alerte';
+                    actionClass = 'action-rouge';
+                    if (cat === 'MAUVAISE') {
+                        actionTexte = `<strong>[ALERTE - MAUVAISE]</strong> : Rappel du process pas à pas, atelier flash sur les notions complexes et validation renforcée par les formateurs.`;
+                    } else if (cat === 'NON CONFORME') {
+                        actionTexte = `<strong>[ALERTE - NON CONFORME]</strong> : Relecture obligatoire avant validation, rappel des règles de montage/découpe et contrôle qualité renforcé.`;
+                    } else if (cat === 'LOUPÉ' || cat === 'LOUPÉ VISUEL') {
+                        actionTexte = `<strong>[ALERTE - ${cat}]</strong> : Lutte contre la précipitation, vérification minutieuse des mots-clés/bandeaux et accompagnement individualisé des profils fragiles.`;
+                    }
+                } else if (tauxReelNum >= (objPct * 0.8)) {
+                    statutClass = 'badge-vigilance';
+                    statutText = 'Vigilance';
+                    actionClass = 'action-orange';
+                    actionTexte = `<strong>[VIGILANCE - ${cat}]</strong> : Briefing de début de shift, rappel des objectifs et suivi hebdomadaire des écarts.`;
+                } else {
+                    actionTexte = `<strong>[TENU - ${cat}]</strong> : Maintenir le niveau de qualité actuel et encourager les bonnes pratiques.`;
                 }
 
-                htmlTable += `<tr class="${rowClass}">
+                htmlTable += `<tr>
                     <td><strong>${idx++}. ${cat}</strong></td>
                     <td><strong style="color:var(--success);">${data.ok}</strong></td>
-                    <td>0</td>
                     <td><span style="color:var(--warning);">${data.vides}</span></td>
                     <td>${objStr}</td>
                     <td><strong>${tauxStr}</strong></td>
                     <td><span class="status-badge ${statutClass}">${statutText}</span></td>
                 </tr>`;
+
+                htmlActionPlan += `<div class="action-row ${actionClass}">
+                    <div class="action-tag">${cat}</div>
+                    <div>${actionTexte}</div>
+                </div>`;
             }
+
             document.getElementById('table-categories').innerHTML = htmlTable;
+            document.getElementById('container-plan-action').innerHTML = htmlActionPlan;
 
-            document.getElementById('texte-alerte-rouge').textContent = totalNonDebrief > 0 
-                ? `${totalNonDebrief} dossier(s) en attente de débrief (P=O, R=Vide).` 
-                : 'Aucun dossier en attente de débrief.';
-
+            // Top 5 Agents
             let flopHtml = '';
             let sortedAgents = Object.entries(agentsMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             sortedAgents.forEach(([ag, count]) => {
@@ -447,16 +466,35 @@
             });
             document.getElementById('table-flop5').innerHTML = flopHtml || '<tr><td colspan="3" style="text-align:center;">Aucune donnée agent</td></tr>';
 
-            let totalSites = sitesMap['TANA'] + sitesMap['DIEGO'] || 1;
-            let tanaPct = Math.round((sitesMap['TANA'] / totalSites) * 100);
-            let diegoPct = Math.round((sitesMap['DIEGO'] / totalSites) * 100);
-            document.getElementById('stats-sites').innerHTML = `
-                <div style="margin-bottom:8px;"><strong>TANA :</strong> ${sitesMap['TANA']} erreurs (${tanaPct}%)</div>
-                <div><strong>DIEGO :</strong> ${sitesMap['DIEGO']} erreurs (${diegoPct}%)</div>
-            `;
+            // Camembert Répartition par Site (Chart.js)
+            mettreAJourCamembert(sitesMap['TANA'], sitesMap['DIEGO']);
         }
 
-        // Lancement automatique de la synchronisation au chargement de la page
+        function mettreAJourCamembert(tana, diego) {
+            const ctx = document.getElementById('chartSites').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['TANA', 'DIEGO'],
+                    datasets: [{
+                        data: [tana, diego],
+                        backgroundColor: ['#2dd4bf', '#f43f5e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+        }
+
         window.onload = function() {
             synchroniserAppsScript();
         };
