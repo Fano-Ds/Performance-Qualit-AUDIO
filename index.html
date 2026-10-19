@@ -333,7 +333,7 @@
 
             for (let i = 1; i < donneesGlobales.length; i++) {
                 const cols = donneesGlobales[i];
-                if (!cols || cols.length < 18) continue;
+                if (!cols || cols.length < 15) continue;
 
                 let agent = String(cols[4] || '').trim();
                 let site = String(cols[5] || '').toUpperCase();
@@ -342,27 +342,27 @@
 
                 if (!agent || agent.length < 2 || agent.includes('Collaborateur')) continue;
 
-                // Filtrage strict par Mois de diffusion
+                // Filtrage Mois de diffusion
                 if (moisActif !== 'toutes' && moisLigne !== moisActif) continue;
 
                 // Filtrage Site et Agent
                 if (siteFiltre !== 'TOUS' && site && !site.includes(siteFiltre)) continue;
                 if (agentFiltre !== 'tous' && agent !== agentFiltre) continue;
 
-                // Lecture exacte des colonnes K (10), L (11), M (12)
-                let colK = String(cols[10] || '').trim().toLowerCase();
-                let colL = String(cols[11] || '').trim().toLowerCase();
-                let colM = String(cols[12] || '').trim().toLowerCase();
+                let colK = String(cols[10] || '').trim();
+                let colL = String(cols[11] || '').trim();
+                let colM = String(cols[12] || '').trim();
 
                 let typeNQ = '';
 
-                // Classification ultra-souple pour capturer les textes exacts de votre Sheet
+                // Classification large et tolérante
                 if (colK !== '') {
                     typeNQ = 'MAUVAISE';
                 } else if (colL !== '') {
-                    if (colL.includes('cqtv')) {
+                    let lLower = colL.toLowerCase();
+                    if (lLower.includes('cqtv')) {
                         typeNQ = 'LOUPÉ VISUEL (CQTV)';
-                    } else if (colL.includes('mot-clé') || colL.includes('loupé')) {
+                    } else {
                         typeNQ = 'LOUPÉ RÉDAC (MOT CLÉ)';
                     }
                 } else if (colM !== '') {
@@ -372,15 +372,15 @@
                 if (!typeNQ) continue;
 
                 let valP = String(cols[15] || '').trim().toUpperCase();
-                let valR = String(cols[17] || '').trim().toUpperCase(); // Colonne Débrief
+                let valR = String(cols[17] || '').trim().toUpperCase();
 
-                // Si P est vide ou égal à 'N' (Non imputable), on exclut. S'il commence par 'O', on l'accepte !
-                if (valP.startsWith('N')) continue;
+                // Si la colonne Imputable (P) indique 'N', on ignore
+                if (valP.includes('N') && !valP.includes('O')) continue;
 
                 agentsSet.add(agent);
 
-                // Si Imputable (commence par 'O' ou vaut 'O')
-                if (valP.startsWith('O') || valP === 'O') {
+                // Si Imputable (P contient 'O' ou est renseigné à 'O')
+                if (valP.includes('O') || valP === '' || valP === 'O') {
                     totalNQ++;
                     agentsMap[agent] = (agentsMap[agent] || 0) + 1;
 
@@ -388,8 +388,7 @@
                     else if (site.includes('DIEGO')) sitesMap['DIEGO']++;
 
                     if (stats[typeNQ]) {
-                        // Règle Débrief : Si R est vide, '0' ou NULL -> Non débriefé (vides). 
-                        // Dès que R contient 'O' (ou commence par 'O'), c'est un débrief réalisé (OK) !
+                        // Si Débrief (R) est vide -> Non débriefé (vides). Sinon -> OK
                         if (valR === '' || valR === '0' || valR === 'NULL') {
                             stats[typeNQ].vides++;
                             totalNonDebrief++;
